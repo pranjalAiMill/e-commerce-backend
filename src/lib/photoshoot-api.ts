@@ -6,10 +6,10 @@
  * 
  * Base URL: Configured via VITE_PHOTOSHOOT_API_URL environment variable
  * Default: https://ai-photoshoot-f9qy.onrender.com (production)
- * Fallback: http://localhost:8000 (local development)
+ * Fallback: http://localhost:8002 (local development)
  */
 
-const PHOTOSHOOT_BASE_URL = import.meta.env.VITE_PHOTOSHOOT_API_URL ?? "https://ai-photoshoot-f9qy.onrender.com";
+const PHOTOSHOOT_BASE_URL = import.meta.env.VITE_PHOTOSHOOT_API_URL ?? "http://localhost:8002";
 
 // ==================================================
 // TYPE DEFINITIONS

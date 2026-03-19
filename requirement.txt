@@ -1,0 +1,34 @@
+# ===============================
+# FastAPI & Server
+# ===============================
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+pandas
+
+# ===============================
+# Core Utilities
+# ===============================
+requests
+tqdm
+Pillow
+pyyaml
+
+# ===============================
+# AI & LLM (OpenAI Only)
+# ===============================
+langchain-core
+langchain-openai
+openai
+langchain-google-genai
+
+# ===============================
+# Frontend (Optional)
+# ===============================
+streamlit
+torch
+transformers
+sentencepiece
+Pillow
+

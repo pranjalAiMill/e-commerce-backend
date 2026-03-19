@@ -1,4 +1,4 @@
-const COLOR_MISMATCH_BASE_URL = import.meta.env.VITE_COLOR_MISMATCH_API_URL ?? "https://e-commerce-qxce.onrender.com";
+const COLOR_MISMATCH_BASE_URL = import.meta.env.VITE_COLOR_MISMATCH_API_URL ?? "http://127.0.0.1:8020";
 
 export interface ColorMismatchHealthResponse {
   status: string;
