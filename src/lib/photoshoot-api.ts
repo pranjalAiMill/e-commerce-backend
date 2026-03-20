@@ -9,7 +9,7 @@
  * Fallback: http://localhost:8002 (local development)
  */
 
-const PHOTOSHOOT_BASE_URL = import.meta.env.VITE_PHOTOSHOOT_API_URL ?? "http://localhost:8002";
+const PHOTOSHOOT_BASE_URL = import.meta.env.VITE_PHOTOSHOOT_API_URL ?? "http://localhost:8000";
 
 // ==================================================
 // TYPE DEFINITIONS

@@ -9,7 +9,7 @@
  * Local override: Set VITE_VTO_API_URL=http://127.0.0.1:8000 for local development
  */
 
-const VTO_BASE_URL = import.meta.env.VITE_VTO_API_URL ?? "http://127.0.0.1:8000";
+const VTO_BASE_URL = import.meta.env.VITE_VTO_API_URL ?? "http://127.0.0.1:8010";
 
 // ==================================================
 // ERROR HANDLING
