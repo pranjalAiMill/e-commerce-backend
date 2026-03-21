@@ -23,12 +23,4 @@ langchain-openai
 openai
 langchain-google-genai
 
-# ===============================
-# Frontend (Optional)
-# ===============================
-streamlit
-torch
-transformers
-sentencepiece
-Pillow
 
