@@ -302,7 +302,7 @@ logger = logging.getLogger("Photoshoot-Backend")
 # ==================================================
 load_dotenv()
 
-from backend.data import get_template_database
+from AiPhotoshoot.backend.data import get_template_database
 
 API_KEY = os.getenv("GEMINI_API_KEY")
 if not API_KEY:

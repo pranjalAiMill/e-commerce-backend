@@ -697,8 +697,8 @@ logger = logging.getLogger("ColorDetection-Backend")
 # ==================================================
 # APP IMPORTS (after logging)
 # ==================================================
-from src.clip_color_detector import ClipColorDetector
-from src.color_match_agent import ColorMatchAgent
+from ProductColorMismatch.src.clip_color_detector import ClipColorDetector
+from ProductColorMismatch.src.color_match_agent import ColorMatchAgent
 
 app = FastAPI(title="Product Color Detection API (GPT Only)")
 
@@ -732,7 +732,8 @@ app.add_middleware(
 # ==================================================
 # CONFIG
 # ==================================================
-OUTPUT_CSV_PATH = "data/hf_products_with_verdict.csv"
+# OUTPUT_CSV_PATH = "data/hf_products_with_verdict.csv"
+OUTPUT_CSV_PATH = os.path.join(os.path.dirname(__file__), "data", "hf_products_with_verdict.csv")
 COLOR_COLUMN_CANDIDATES = ["baseColour", "base_colour", "color", "colour"]
 NAME_COLUMN_CANDIDATES  = ["productDisplayName", "product_name", "name", "title"]
 
