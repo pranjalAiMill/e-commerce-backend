@@ -219,7 +219,7 @@
 #         return ["M"] # Fallback default
 
 # mapping.py
-from logger import get_logger
+from VTryon_Updated.logger import get_logger
 
 logger = get_logger("VTO-Mapping")
 

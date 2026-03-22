@@ -467,11 +467,11 @@ from google.genai import types
 # ==================================================
 # 1. LOGGING — must be configured FIRST
 # ==================================================
-from logger import get_logger, configure_logging
+from VTryon_Updated.logger import get_logger, configure_logging
 configure_logging()
 logger = get_logger("VTO-Backend")
 
-import mapping as mp  # Import AFTER logging is configured
+from VTryon_Updated import mapping as mp # Import AFTER logging is configured
 
 # ==================================================
 # 2. AZURE BLOB STORAGE CONFIG
