@@ -1,0 +1,101 @@
+sku,marketplace,mismatchScore,attributeErrors,localMissing,category,issueType,listingProb,impactScore,title,description,brand,language,region,date,aiPhotoshootDone,aiPhotosGenerated,traditionalPhotoCost,aiPhotoCost,complianceScore,skuAiCoverage,avgRenderTimeSeconds,marketplaceApprovalRate
+SKU-2001,Checkers,81,,,Grocery,Localization,52,6.91,Organic Almonds Pack,Premium quality almonds pack.,Brand B,en,south_africa,2026-03-27,true,1,350,28,67,true,4.2,47
+SKU-2002,Flipkart,16,Dimensions,,Home,Attribute Error,80,5.67,Wooden Side Table,Compact side table for bedroom.,Brand B,en,india,2026-03-26,true,2,5000,360,82,true,6.8,76
+SKU-2003,eBay,48,,,Beauty,Localization,57,3.38,Hydrating Lip Balm,Nourishing lip care balm.,Brand C,en,global,2026-03-25,true,3,135,9.6,80,true,9.1,54
+SKU-2004,Makro,20,,,Electronics,Localization,62,3.11,Smart Fitness Watch,Activity tracker with heart rate monitor.,Brand C,en,south_africa,2026-03-24,true,4,1400,112,77,true,12.5,60
+SKU-2005,Checkers,33,Material|Dimensions,af,Electronics,Attribute Error,89,4.47,Indoor Security Camera,Wi-Fi camera with night mode.,Brand B,en,south_africa,2026-03-23,true,5,1750,140,74,true,7.3,88
+SKU-2006,Takealot,29,,,Beauty,Localization,62,1.38,Hydrating Lip Balm,Nourishing lip care balm.,Brand C,en,south_africa,2026-03-22,true,1,350,28,78,true,5.6,62
+SKU-2007,Myntra,10,Gender|Dimensions,ta,Grocery,Attribute Error,70,3.53,Protein Oats Jar,High fiber breakfast oats.,Brand A,en,india,2026-03-21,true,2,5000,360,84,true,15.2,71
+SKU-2008,Checkers,37,Color,,Fashion,Color Mismatch,74,3.67,Men's Crew Neck Tee,Soft cotton casual t-shirt.,Brand A,en,south_africa,2026-03-20,false,0,1050,84,73,true,8.4,76
+SKU-2009,Amazon.com,30,,,Home,Localization,73,2.8,Kitchen Storage Rack,Metal rack for pantry storage.,Brand C,en,global,2026-03-19,false,0,135,9.6,86,true,11.1,76
+SKU-2010,Myntra,77,Brand,,Electronics,Multiple Issues,69,8.78,Smart Fitness Watch,Activity tracker with heart rate monitor.,Brand A,en,india,2026-03-18,false,0,7500,540,74,true,3.9,73
+SKU-2011,Flipkart,45,Pattern,,Fashion,Attribute Error,95,3.15,Women's Printed Kurti,Daily wear printed kurti.,Brand A,en,india,2026-03-17,true,1,2500,180,77,true,4.2,98
+SKU-2012,eBay,28,,ar,Fashion,Localization,77,2.14,Women's Maxi Dress,Floral maxi dress for summer.,Brand B,en,global,2026-03-16,true,2,90,6.4,83,true,6.8,72
+SKU-2013,Makro,24,,,Home,Localization,63,2.43,Storage Cabinet Unit,Compact wooden storage cabinet.,Brand B,en,south_africa,2026-03-15,true,3,1050,84,76,true,9.1,59
+SKU-2014,Amazon.in,13,,,Home,Localization,65,1.67,Scandinavian Floor Lamp,Modern floor lamp with fabric shade.,Brand B,en,india,2026-03-14,true,4,10000,720,86,true,12.5,62
+SKU-2015,Shopify,60,Gender,ar,Beauty,Attribute Error,58,7.92,Vitamin C Face Wash,Brightening face wash for daily use.,Brand C,en,global,2026-03-13,true,5,225,16.0,84,true,7.3,56
+SKU-2016,eBay,46,,,Fashion,Localization,53,3.28,Men's Casual Shirt,Slim fit casual cotton shirt.,Brand A,en,global,2026-03-12,true,1,45,3.2,80,true,5.6,52
+SKU-2017,Shopify,18,,es,Grocery,Localization,92,1.83,Rooibos Herbal Tea Pack,South African herbal tea.,Brand B,en,global,2026-03-11,true,2,90,6.4,90,true,15.2,92
+SKU-2018,Amazon.in,26,Dimensions,ta,Electronics,Attribute Error,61,3.11,Smart Home Plug Set,App-controlled smart plug pack.,Brand C,en,india,2026-03-10,false,0,7500,540,84,false,8.4,62
+SKU-2019,Flipkart,12,,,Beauty,Localization,46,7.73,Retinol Night Serum,Anti-aging overnight serum.,Brand C,en,india,2026-03-09,false,0,7500,540,82,false,11.1,48
+SKU-2020,Flipkart,38,,hi,Home,Localization,62,2.6,Decorative Wall Mirror,Round wall mirror for living room.,Brand A,en,india,2026-03-08,false,0,7500,540,78,false,3.9,65
+SKU-2021,Amazon.com,31,Size|Brand,ar,Fashion,Size Mismatch,57,4.39,Women's Denim Jacket,Classic denim jacket with button front.,Brand A,en,global,2026-03-07,true,1,45,3.2,86,true,4.2,61
+SKU-2022,Walmart,20,Pattern,ar,Beauty,Attribute Error,83,3.81,Hydrating Body Lotion,Daily moisturizing body lotion.,Brand B,en,global,2026-03-06,true,2,90,6.4,87,true,6.8,88
+SKU-2023,Takealot,16,Dimensions|Size,af,Fashion,Size Mismatch,60,4.76,Men's Graphic Hoodie,Fleece hoodie with front print.,Brand B,en,south_africa,2026-03-05,true,3,1050,84,80,true,9.1,55
+SKU-2024,Makro,25,,,Fashion,Localization,63,3.28,Women's Satin Blouse,Formal satin blouse with V-neck.,Brand A,en,south_africa,2026-03-04,true,4,1400,112,76,true,12.5,59
+SKU-2025,Amazon.com,26,Pattern,ar,Home,Attribute Error,95,5.9,Coffee Table Set,Nesting coffee table set.,Brand A,en,global,2026-03-03,true,5,225,16.0,87,true,7.3,92
+SKU-2026,Amazon.com,44,Size,,Electronics,Size Mismatch,67,4.93,USB-C Fast Charger,20W mobile charging adapter.,Brand C,en,global,2026-03-02,true,1,45,3.2,84,true,5.6,65
+SKU-2027,Checkers,36,,,Fashion,Localization,77,2.43,Men's Polo T-Shirt,Cotton polo with contrast collar.,Brand C,en,south_africa,2026-03-01,true,2,700,56,74,true,15.2,76
+SKU-2028,Amazon.com,14,,,Electronics,Localization,67,1.71,Portable Speaker Mini,Compact wireless speaker.,Brand B,en,global,2026-02-28,false,0,135,9.6,89,true,8.4,67
+SKU-2029,Amazon.in,46,,,Fashion,Localization,73,2.35,Women's Party Gown,Occasion wear gown with shimmer finish.,Brand B,en,india,2026-02-27,false,0,7500,540,81,true,11.1,74
+SKU-2030,Shopify,16,Color|Gender|Brand,es,Electronics,Color Mismatch,72,3.75,Noise Cancelling Headphones,Over-ear Bluetooth headphones.,Brand A,en,global,2026-02-26,false,0,135,9.6,91,true,3.9,74
+SKU-2031,Woolworths,13,,,Electronics,Localization,94,1.81,LED Desk Lamp,Adjustable study desk lamp.,Brand A,en,south_africa,2026-02-25,true,1,350,28,83,true,4.2,97
+SKU-2032,Checkers,27,,,Home,Localization,94,1.71,Cotton Bed Sheet Set,King-size printed bed sheet.,Brand B,en,south_africa,2026-02-24,true,2,700,56,75,true,6.8,98
+SKU-2033,Woolworths,46,,,Grocery,Localization,85,1.81,Protein Snack Bars,High protein healthy snack bars.,Brand C,en,south_africa,2026-02-23,true,3,1050,84,78,true,9.1,90
+SKU-2034,Walmart,33,Size,,Home,Size Mismatch,74,4.45,Storage Cabinet Unit,Compact wooden storage cabinet.,Brand C,en,global,2026-02-22,true,4,180,12.8,85,true,12.5,69
+SKU-2035,eBay,29,Material|Size|Brand,,Beauty,Size Mismatch,55,6.39,Sunscreen Gel SPF 50,Daily non-greasy sun protection.,Brand A,en,global,2026-02-21,true,5,225,16.0,83,true,7.3,51
+SKU-2036,eBay,52,Size|Gender,,Grocery,Size Mismatch,90,6.16,Whole Wheat Pasta,Healthy fiber-rich pasta pack.,Brand A,en,global,2026-02-20,true,1,45,3.2,79,true,5.6,87
+SKU-2037,Myntra,34,,,Home,Localization,53,2.0,Laundry Basket Foldable,Collapsible laundry basket.,Brand C,en,india,2026-02-19,true,2,5000,360,81,true,15.2,51
+SKU-2038,Checkers,30,Size|Dimensions,,Beauty,Size Mismatch,61,5.83,Aloe Vera Gel,Soothing skincare aloe gel.,Brand A,en,south_africa,2026-02-18,false,0,1050,84,74,false,8.4,60
+SKU-2039,Amazon.in,11,,,Beauty,Localization,53,1.51,Cleansing Foam Face Wash,Gentle everyday face cleanser.,Brand A,en,india,2026-02-17,false,0,7500,540,86,false,11.1,53
+SKU-2040,Walmart,24,,fr,Home,Localization,91,1.71,Minimal Ceramic Vase,Decorative vase for shelves.,Brand A,en,global,2026-02-16,false,0,135,9.6,86,false,3.9,92
+SKU-2041,Walmart,14,Color|Brand|Gender,,Grocery,Color Mismatch,94,4.62,Granola Breakfast Mix,Healthy breakfast cereal blend.,Brand A,en,global,2026-02-15,true,1,45,3.2,88,true,4.2,96
+SKU-2042,Amazon.in,33,,,Grocery,Localization,83,2.16,Organic Peanut Butter,Creamy roasted peanut butter.,Brand A,en,india,2026-02-14,true,2,5000,360,83,true,6.8,86
+SKU-2043,Flipkart,80,,,Grocery,Localization,76,9.57,Organic Almonds Pack,Premium quality almonds pack.,Brand A,en,india,2026-02-13,true,3,7500,540,72,true,9.1,80
+SKU-2044,Amazon.in,26,Pattern|Material,hi,Electronics,Attribute Error,69,4.95,Portable Blender,Rechargeable portable smoothie blender.,Brand B,en,india,2026-02-12,true,4,10000,720,84,true,12.5,74
+SKU-2045,Amazon.in,14,,,Electronics,Localization,54,1.63,Bluetooth Neckband,Wireless neckband earphones.,Brand A,en,india,2026-02-11,true,5,12500,900,86,true,7.3,49
+SKU-2046,Walmart,30,Color|Material|Pattern,ar,Fashion,Color Mismatch,91,3.94,Men's Running Shorts,Quick dry athletic shorts.,Brand A,en,global,2026-02-10,true,1,45,3.2,86,true,5.6,87
+SKU-2047,Magento,38,Brand|Dimensions|Color,,Fashion,Color Mismatch,90,5.69,Women's Ethnic Co-ord Set,Printed ethnic co-ord outfit.,Brand C,en,global,2026-02-09,true,2,90,6.4,83,true,15.2,87
+SKU-2048,Magento,14,,,Electronics,Localization,76,1.36,Smart Fitness Watch,Activity tracker with heart rate monitor.,Brand C,en,global,2026-02-08,false,0,135,9.6,87,true,8.4,74
+SKU-2049,Walmart,11,,fr,Home,Localization,83,3.07,Wooden Side Table,Compact side table for bedroom.,Brand B,en,global,2026-02-07,false,0,135,9.6,88,true,11.1,82
+SKU-2050,Checkers,38,,,Grocery,Localization,79,3.15,Protein Oats Jar,High fiber breakfast oats.,Brand C,en,south_africa,2026-02-06,false,0,1050,84,73,true,3.9,79
+SKU-2051,Shopify,30,Size|Dimensions|Pattern,,Fashion,Size Mismatch,58,6.31,Men's Formal Blazer,Slim fit evening blazer.,Brand A,en,global,2026-02-05,true,1,45,3.2,88,true,4.2,59
+SKU-2052,Walmart,35,,,Grocery,Localization,65,1.22,Rooibos Herbal Tea Pack,South African herbal tea.,Brand B,en,global,2026-02-04,true,2,90,6.4,85,true,6.8,67
+SKU-2053,Myntra,27,Pattern|Brand,,Fashion,Attribute Error,73,6.58,Women's Pleated Skirt,Mid-length pleated office skirt.,Brand C,en,india,2026-02-03,true,3,7500,540,82,true,9.1,76
+SKU-2054,Shopify,15,Color|Gender|Dimensions,,Home,Color Mismatch,57,5.32,Storage Organizer Box,Multipurpose foldable organizer.,Brand A,en,global,2026-02-02,true,4,180,12.8,91,true,12.5,61
+SKU-2055,Myntra,36,,,Fashion,Localization,64,2.16,Men's Casual Trousers,Straight fit daily wear trousers.,Brand B,en,india,2026-02-01,true,5,12500,900,81,true,7.3,69
+SKU-2056,Magento,47,,ar,Grocery,Localization,53,1.09,Protein Snack Bars,High protein healthy snack bars.,Brand A,en,global,2026-01-31,true,1,45,3.2,82,true,5.6,48
+SKU-2057,Flipkart,30,Size,,Electronics,Size Mismatch,94,5.34,Indoor Security Camera,Wi-Fi camera with night mode.,Brand C,en,india,2026-01-30,true,2,5000,360,80,true,15.2,90
+SKU-2058,Checkers,16,,,Home,Localization,52,3.71,Kitchen Storage Rack,Metal rack for pantry storage.,Brand A,en,south_africa,2026-01-29,false,0,1050,84,77,false,8.4,49
+SKU-2059,Takealot,28,,,Grocery,Localization,63,3.28,Whole Wheat Pasta,Healthy fiber-rich pasta pack.,Brand B,en,south_africa,2026-01-28,false,0,1050,84,78,false,11.1,61
+SKU-2060,Walmart,28,,,Electronics,Localization,63,2.93,Smart Home Plug Set,App-controlled smart plug pack.,Brand B,en,global,2026-01-27,false,0,135,9.6,86,false,3.9,62
+SKU-2061,Shopify,16,,,Fashion,Localization,71,3.28,Men's Crew Neck Tee,Soft cotton casual t-shirt.,Brand B,en,global,2026-01-26,true,1,45,3.2,91,true,4.2,71
+SKU-2062,Amazon.in,36,,,Beauty,Localization,76,2.72,Herbal Shampoo,Hair strengthening herbal shampoo.,Brand C,en,india,2026-01-25,true,2,5000,360,83,true,6.8,77
+SKU-2063,Walmart,14,Dimensions|Material,,Fashion,Attribute Error,68,6.06,Women's Printed Kurti,Daily wear printed kurti.,Brand C,en,global,2026-01-24,true,3,135,9.6,88,true,9.1,70
+SKU-2064,Woolworths,75,,,Beauty,Localization,35,9.5,Hydrating Lip Balm,Nourishing lip care balm.,Brand C,en,south_africa,2026-01-23,true,4,1400,112,74,true,12.5,45
+SKU-2065,Shopify,17,,,Electronics,Localization,54,3.03,USB-C Fast Charger,20W mobile charging adapter.,Brand B,en,global,2026-01-22,true,5,225,16.0,90,true,7.3,58
+SKU-2066,Myntra,14,Brand|Gender,hi,Grocery,Attribute Error,70,5.2,Granola Breakfast Mix,Healthy breakfast cereal blend.,Brand B,en,india,2026-01-21,true,1,2500,180,84,true,5.6,75
+SKU-2067,Checkers,23,,,Electronics,Localization,46,7.3,Portable Speaker Mini,Compact wireless speaker.,Brand C,en,south_africa,2026-01-20,true,2,700,56,76,true,15.2,45
+SKU-2068,Walmart,38,,,Beauty,Localization,68,2.37,Vitamin C Face Wash,Brightening face wash for daily use.,Brand C,en,global,2026-01-19,false,0,135,9.6,84,true,8.4,64
+SKU-2069,Magento,72,,,Electronics,Localization,63,8.04,Noise Cancelling Headphones,Over-ear Bluetooth headphones.,Brand A,en,global,2026-01-18,false,0,135,9.6,78,true,11.1,60
+SKU-2070,Amazon.com,19,,es,Fashion,Localization,73,2.39,Women's Maxi Dress,Floral maxi dress for summer.,Brand B,en,global,2026-01-17,false,0,135,9.6,88,true,3.9,71
+SKU-2071,Magento,42,,,Grocery,Localization,66,2.68,Organic Peanut Butter,Creamy roasted peanut butter.,Brand C,en,global,2026-01-16,true,1,45,3.2,83,true,4.2,65
+SKU-2072,Woolworths,48,Color|Size|Dimensions,,Home,Color Mismatch,79,5.83,5-Tier Shoe Rack,Space-saving metal shoe rack.,Brand B,en,south_africa,2026-01-15,true,2,700,56,78,true,6.8,79
+SKU-2073,Takealot,70,,,Electronics,Localization,52,7.44,LED Desk Lamp,Adjustable study desk lamp.,Brand B,en,south_africa,2026-01-14,true,3,1050,84,72,true,9.1,53
+SKU-2074,Woolworths,35,,,Beauty,Localization,89,3.15,Retinol Night Serum,Anti-aging overnight serum.,Brand B,en,south_africa,2026-01-13,true,4,1400,112,80,true,12.5,91
+SKU-2075,Makro,10,Color|Brand,,Grocery,Color Mismatch,81,3.46,Organic Almonds Pack,Premium quality almonds pack.,Brand B,en,south_africa,2026-01-12,true,5,1750,140,78,true,7.3,84
+SKU-2076,Flipkart,10,Gender,,Grocery,Attribute Error,57,5.81,Protein Oats Jar,High fiber breakfast oats.,Brand C,en,india,2026-01-11,true,1,2500,180,82,true,5.6,61
+SKU-2077,Shopify,29,,,Grocery,Localization,64,1.34,Rooibos Herbal Tea Pack,South African herbal tea.,Brand C,en,global,2026-01-10,true,2,90,6.4,89,true,15.2,69
+SKU-2078,Magento,26,,ar,Beauty,Localization,71,1.51,Hydrating Body Lotion,Daily moisturizing body lotion.,Brand C,en,global,2026-01-09,false,0,135,9.6,85,false,8.4,66
+SKU-2079,Flipkart,45,,bn,Electronics,Localization,93,1.55,Portable Blender,Rechargeable portable smoothie blender.,Brand B,en,india,2026-01-08,false,0,7500,540,77,false,11.1,89
+SKU-2080,Amazon.com,17,,,Beauty,Localization,72,1.09,Sunscreen Gel SPF 50,Daily non-greasy sun protection.,Brand A,en,global,2026-01-07,false,0,135,9.6,88,false,3.9,69
+SKU-2081,eBay,23,,,Home,Localization,71,2.12,Ceramic Dinner Set,12-piece ceramic dinner set.,Brand B,en,global,2026-01-06,true,1,45,3.2,84,true,4.2,69
+SKU-2082,Magento,42,Brand,,Home,Attribute Error,93,6.47,Scandinavian Floor Lamp,Modern floor lamp with fabric shade.,Brand A,en,global,2026-01-05,true,2,90,6.4,83,true,6.8,92
+SKU-2083,Amazon.in,40,,bn,Fashion,Localization,41,6.84,Men's Casual Shirt,Slim fit casual cotton shirt.,Brand A,en,india,2026-01-04,true,3,7500,540,82,true,9.1,45
+SKU-2084,Magento,56,,,Beauty,Localization,54,9.26,Aloe Vera Gel,Soothing skincare aloe gel.,Brand A,en,global,2026-01-03,true,4,180,12.8,81,true,12.5,55
+SKU-2085,Flipkart,45,Size|Gender|Dimensions,,Fashion,Size Mismatch,90,4.58,Women's Denim Jacket,Classic denim jacket with button front.,Brand C,en,india,2026-01-02,true,5,12500,900,77,true,7.3,92
+SKU-2086,Myntra,40,,,Beauty,Localization,62,2.64,Cleansing Foam Face Wash,Gentle everyday face cleanser.,Brand C,en,india,2026-01-01,true,1,2500,180,80,true,5.6,65
+SKU-2087,eBay,45,,es,Electronics,Localization,85,3.3,Bluetooth Neckband,Wireless neckband earphones.,Brand B,en,global,2025-12-31,true,2,90,6.4,80,true,15.2,89
+SKU-2088,Magento,69,,,Home,Localization,71,5.88,Decorative Wall Mirror,Round wall mirror for living room.,Brand B,en,global,2025-12-30,false,0,135,9.6,79,true,8.4,76
+SKU-2089,Amazon.com,48,,,Grocery,Localization,89,1.96,Protein Snack Bars,High protein healthy snack bars.,Brand B,en,global,2025-12-29,false,0,135,9.6,84,true,11.1,84
+SKU-2090,Woolworths,18,,,Fashion,Localization,79,1.15,Men's Graphic Hoodie,Fleece hoodie with front print.,Brand C,en,south_africa,2025-12-28,false,0,1050,84,82,true,3.9,75
+SKU-2091,Shopify,44,Pattern|Dimensions,,Fashion,Attribute Error,70,6.02,Women's Satin Blouse,Formal satin blouse with V-neck.,Brand C,en,global,2026-03-27,true,1,45,3.2,86,true,4.2,67
+SKU-2092,Woolworths,21,Material|Pattern|Color,zu,Home,Color Mismatch,54,5.44,Coffee Table Set,Nesting coffee table set.,Brand A,en,south_africa,2026-03-26,true,2,700,56,82,true,6.8,52
+SKU-2093,Makro,31,,zu,Beauty,Localization,64,2.74,Herbal Shampoo,Hair strengthening herbal shampoo.,Brand A,en,south_africa,2026-03-25,true,3,1050,84,75,true,9.1,63
+SKU-2094,Shopify,53,Pattern,,Beauty,Attribute Error,32,8.12,Hydrating Lip Balm,Nourishing lip care balm.,Brand A,en,global,2026-03-24,true,4,180,12.8,85,true,12.5,45
+SKU-2095,Takealot,37,,,Beauty,Localization,86,2.49,Vitamin C Face Wash,Brightening face wash for daily use.,Brand A,en,south_africa,2026-03-23,true,5,1750,140,76,true,7.3,87
+SKU-2096,Magento,33,,,Fashion,Localization,89,2.74,Men's Polo T-Shirt,Cotton polo with contrast collar.,Brand B,en,global,2026-03-22,true,1,45,3.2,84,true,5.6,91
+SKU-2097,Flipkart,34,,,Fashion,Localization,68,1.32,Women's Party Gown,Occasion wear gown with shimmer finish.,Brand B,en,india,2026-03-21,true,2,5000,360,79,true,15.2,71
+SKU-2098,Woolworths,23,,,Beauty,Localization,74,1.38,Retinol Night Serum,Anti-aging overnight serum.,Brand A,en,south_africa,2026-03-20,false,0,1050,84,82,false,8.4,78
+SKU-2099,Woolworths,26,,,Grocery,Localization,95,1.3,Whole Wheat Pasta,Healthy fiber-rich pasta pack.,Brand B,en,south_africa,2026-03-19,false,0,1050,84,81,false,11.1,98
+SKU-2100,Takealot,10,,,Home,Localization,75,2.08,Cotton Bed Sheet Set,King-size printed bed sheet.,Brand B,en,south_africa,2026-03-18,false,0,1050,84,80,false,3.9,70
