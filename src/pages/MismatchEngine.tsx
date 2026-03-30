@@ -32,7 +32,7 @@ import { getColorMismatchDataset, type DatasetResponse } from "@/lib/color-misma
 import ProductImage from "@/components/ProductImage";
 
 // ── Mismatch-specific API base (from file 2) ──────────────────────────────────
-const MISMATCH_API_BASE_URL = import.meta.env.VITE_MISMATCH_API_URL ?? "e-commerce-dashboard-asapc3eac9b9dfb7.westus2-01.azurewebsites.net";
+const MISMATCH_API_BASE_URL = import.meta.env.VITE_MISMATCH_API_URL ?? "https://e-commerce-dashboard-asapc3eac9b9dfb7.westus2-01.azurewebsites.net";
 
 async function fetchMismatchApi<T>(path: string): Promise<T> {
   const response = await fetch(`${MISMATCH_API_BASE_URL}${path}`);

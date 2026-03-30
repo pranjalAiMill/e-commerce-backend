@@ -897,7 +897,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
 
-const EXEC_API_BASE = import.meta.env.VITE_MISMATCH_API_URL ?? "e-commerce-dashboard-asapc3eac9b9dfb7.westus2-01.azurewebsites.net";
+const EXEC_API_BASE = import.meta.env.VITE_MISMATCH_API_URL ?? "https://e-commerce-dashboard-asapc3eac9b9dfb7.westus2-01.azurewebsites.net";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 

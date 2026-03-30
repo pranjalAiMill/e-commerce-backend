@@ -266,7 +266,7 @@ import {
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 
-const EXEC_API_BASE = import.meta.env.VITE_MISMATCH_API_URL ?? "e-commerce-dashboard-asapc3eac9b9dfb7.westus2-01.azurewebsites.net";
+const EXEC_API_BASE = import.meta.env.VITE_MISMATCH_API_URL ?? "https://e-commerce-dashboard-asapc3eac9b9dfb7.westus2-01.azurewebsites.net";
 
 interface CostDataPoint {
   month: string;
