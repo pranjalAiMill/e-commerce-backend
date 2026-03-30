@@ -65,12 +65,6 @@ const mainNavItems: NavItem[] = [
     icon: Camera,
     description: "Generate product imagery"
   },
-  { 
-    title: "Image to Text", 
-    url: "/content", 
-    icon: FileText,
-    description: "Auto-generate descriptions"
-  },
 ];
 
 const toolsItems: NavItem[] = [
@@ -266,29 +260,7 @@ export function AppSidebar() {
           </SidebarGroup>
 
           {/* AI Tools Section */}
-          <SidebarGroup className="mt-4 space-y-2">
-            {!collapsed && (
-              <>
-                <Separator className="my-2" />
-                <SidebarGroupLabel className="text-[11px] font-medium text-[#6B7280] uppercase tracking-[0.5px] px-0 pt-2 pb-2">
-                  AI Tools
-                </SidebarGroupLabel>
-              </>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {toolsItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <NavItemLink 
-                      item={item} 
-                      collapsed={collapsed} 
-                      isActive={checkIsActive(item.url)} 
-                    />
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+
         </SidebarContent>
 
         <SidebarFooter className={cn(

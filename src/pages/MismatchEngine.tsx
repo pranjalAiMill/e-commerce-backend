@@ -31,6 +31,18 @@ import { apiClient } from "@/lib/api";
 import { getColorMismatchDataset, type DatasetResponse } from "@/lib/color-mismatch-api";
 import ProductImage from "@/components/ProductImage";
 
+// ── Mismatch-specific API base (from file 2) ──────────────────────────────────
+const MISMATCH_API_BASE_URL = import.meta.env.VITE_MISMATCH_API_URL ?? "e-commerce-dashboard-asapc3eac9b9dfb7.westus2-01.azurewebsites.net";
+
+async function fetchMismatchApi<T>(path: string): Promise<T> {
+  const response = await fetch(`${MISMATCH_API_BASE_URL}${path}`);
+  if (!response.ok) {
+    throw new Error(`Mismatch API request failed: ${response.status}`);
+  }
+  return response.json() as Promise<T>;
+}
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 interface MismatchKPI {
   label: string;
   value: string;
@@ -99,6 +111,7 @@ interface LocalizationResponse {
   nonCompliantKeywords: number;
 }
 
+// ── Mock data ─────────────────────────────────────────────────────────────────
 const mockTableData: MismatchRow[] = [
   {
     sku: "SKU-8742",
@@ -168,21 +181,16 @@ const mockTableData: MismatchRow[] = [
 ];
 
 const flagEmojis: Record<string, string> = {
-  hi: "🇮🇳",
-  ta: "🇮🇳",
-  te: "🇮🇳",
-  bn: "🇮🇳",
-  zu: "🇿🇦",
-  af: "🇿🇦",
-  xh: "🇿🇦",
-  en: "🌍",
-  es: "🌍",
-  fr: "🌍",
-  ar: "🌍"
+  hi: "🇮🇳", ta: "🇮🇳", te: "🇮🇳", bn: "🇮🇳",
+  zu: "🇿🇦", af: "🇿🇦", xh: "🇿🇦",
+  en: "🌍", es: "🌍", fr: "🌍", ar: "🌍",
 };
 
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function MismatchEngine() {
   const queryClient = useQueryClient();
+
+  // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [brand, setBrand] = useState("all");
@@ -192,9 +200,9 @@ export default function MismatchEngine() {
   const [issueType, setIssueType] = useState("all");
   const [selectedSku, setSelectedSku] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  // Default to mismatches only to streamline workflow and reduce data load
   const [viewMode, setViewMode] = useState<"mismatches" | "all">("mismatches");
-  // Inline editing and bulk update
+
+  // Audit table inline editing & bulk update
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
   const [editingCell, setEditingCell] = useState<{ sku: string; field: "title" | "description" } | null>(null);
   const [editingValue, setEditingValue] = useState("");
@@ -202,7 +210,15 @@ export default function MismatchEngine() {
   const [bulkDescription, setBulkDescription] = useState("");
   const [bulkTitle, setBulkTitle] = useState("");
 
-  // Build query params
+  // Color Mismatch CSV table state (from file 1)
+  const [csvMismatchOnly, setCsvMismatchOnly] = useState(true);
+  const [csvEditingId, setCsvEditingId] = useState<string | null>(null);
+  const [csvEditingValue, setCsvEditingValue] = useState("");
+  const [csvLocalEdits, setCsvLocalEdits] = useState<Record<string, string>>({});
+  const [csvSelectedIds, setCsvSelectedIds] = useState<Set<string>>(new Set());
+  const [csvBulkName, setCsvBulkName] = useState("");
+
+  // ── Query params ──────────────────────────────────────────────────────────
   const queryParams = new URLSearchParams();
   if (searchQuery) queryParams.set("search", searchQuery);
   if (category !== "all") queryParams.set("category", category);
@@ -215,33 +231,31 @@ export default function MismatchEngine() {
   queryParams.set("page", page.toString());
   queryParams.set("limit", "50");
 
-  // Fetch KPIs
+  // ── Queries (KPIs & list hit the dedicated mismatch API, file 2) ──────────
   const { data: kpisData, isLoading: kpisLoading } = useQuery<{ kpis: MismatchKPI[] }>({
-    queryKey: ["mismatch", "kpis"],
-    queryFn: () => apiClient.get<{ kpis: MismatchKPI[] }>("/mismatch/kpis"),
+    queryKey: ["mismatch", "kpis", queryParams.toString()],
+    queryFn: () => fetchMismatchApi<{ kpis: MismatchKPI[] }>(`/mismatch/kpis?${queryParams.toString()}`),
   });
 
-  // Fetch mismatch list
   const { data: mismatchData, isLoading: mismatchLoading, error: mismatchError } = useQuery<MismatchListResponse>({
     queryKey: ["mismatch", "list", queryParams.toString()],
-    queryFn: () => apiClient.get<MismatchListResponse>(`/mismatch/list?${queryParams.toString()}`),
+    queryFn: () => fetchMismatchApi<MismatchListResponse>(`/mismatch/list?${queryParams.toString()}`),
   });
 
-  // Fetch attribute comparison for selected SKU
+  // Attribute & localization still use the general apiClient
   const { data: attributeData, isLoading: attributeLoading } = useQuery<AttributeComparisonResponse>({
     queryKey: ["mismatch", "attributes", selectedSku],
     queryFn: () => apiClient.get<AttributeComparisonResponse>(`/mismatch/sku/${selectedSku}/attributes`),
     enabled: !!selectedSku,
   });
 
-  // Fetch localization for selected SKU
   const { data: localizationData, isLoading: localizationLoading } = useQuery<LocalizationResponse>({
     queryKey: ["mismatch", "localization", selectedSku],
     queryFn: () => apiClient.get<LocalizationResponse>(`/mismatch/sku/${selectedSku}/localization`),
     enabled: !!selectedSku,
   });
 
-  // Load color-mismatch CSV to surface it under the Image-Description Audit Table
+  // Color-mismatch CSV
   const {
     data: colorCsv,
     isLoading: isColorCsvLoading,
@@ -252,12 +266,13 @@ export default function MismatchEngine() {
     queryFn: getColorMismatchDataset,
   });
 
-  // Export mutation
+  // ── Mutations ─────────────────────────────────────────────────────────────
   const exportMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL ?? "https://api.example.com/api/v1"}/mismatch/export?${queryParams.toString()}`, {
-        method: "GET",
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL ?? "https://api.example.com/api/v1"}/mismatch/export?${queryParams.toString()}`,
+        { method: "GET" }
+      );
       if (!response.ok) throw new Error("Export failed");
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -269,28 +284,23 @@ export default function MismatchEngine() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     },
-    onSuccess: () => {
-      toast({
-        title: "Export completed",
-        description: "Data export downloaded successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Export failed",
-        description: "Failed to export data",
-        variant: "destructive",
-      });
-    },
+    onSuccess: () => toast({ title: "Export completed", description: "Data export downloaded successfully" }),
+    onError: () => toast({ title: "Export failed", description: "Failed to export data", variant: "destructive" }),
   });
 
-  // Inline / bulk description update mutation
   const updateDescriptionMutation = useMutation({
-    mutationFn: async (payload: { sku: string; title?: string; description?: string } | { skus: string[]; title?: string; description?: string }) => {
+    mutationFn: async (
+      payload:
+        | { sku: string; title?: string; description?: string }
+        | { skus: string[]; title?: string; description?: string }
+    ) => {
       if ("skus" in payload) {
         return apiClient.post<{ success: boolean; updated: number }>("/mismatch/bulk-update", payload);
       }
-      return apiClient.put<{ success: boolean }>(`/mismatch/sku/${payload.sku}/description`, { title: payload.title, description: payload.description });
+      return apiClient.put<{ success: boolean }>(`/mismatch/sku/${payload.sku}/description`, {
+        title: payload.title,
+        description: payload.description,
+      });
     },
     onSuccess: (_, variables) => {
       if ("skus" in variables) {
@@ -322,32 +332,29 @@ export default function MismatchEngine() {
       }
       queryClient.invalidateQueries({ queryKey: ["mismatch"] });
     },
-    onError: () => {
-      toast({ title: "Update failed", description: "Backend may not support this endpoint. Try again or check API.", variant: "destructive" });
-    },
+    onError: () =>
+      toast({
+        title: "Update failed",
+        description: "Backend may not support this endpoint. Try again or check API.",
+        variant: "destructive",
+      }),
   });
 
-  // Fix mutation
   const fixMutation = useMutation({
-    mutationFn: async (data: { sku: string; action: string; parameters?: Record<string, unknown> }) => {
-      return apiClient.post<{ success: boolean; message: string; jobId: string; estimatedTime: string }>("/mismatch/fix", data);
-    },
+    mutationFn: async (data: { sku: string; action: string; parameters?: Record<string, unknown> }) =>
+      apiClient.post<{ success: boolean; message: string; jobId: string; estimatedTime: string }>(
+        "/mismatch/fix",
+        data
+      ),
     onSuccess: (data) => {
-      toast({
-        title: "Fix process started",
-        description: data.message,
-      });
+      toast({ title: "Fix process started", description: data.message });
       queryClient.invalidateQueries({ queryKey: ["mismatch"] });
     },
-    onError: () => {
-      toast({
-        title: "Fix failed",
-        description: "Failed to start fix process",
-        variant: "destructive",
-      });
-    },
+    onError: () => toast({ title: "Fix failed", description: "Failed to start fix process", variant: "destructive" }),
   });
 
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  // No toast on clear (file 1 behaviour)
   const handleClearFilters = () => {
     setSearchQuery("");
     setCategory("all");
@@ -356,36 +363,17 @@ export default function MismatchEngine() {
     setLanguage("all");
     setRegion("all");
     setIssueType("all");
-    toast({
-      title: "Filters cleared",
-      description: "All filters have been reset.",
-    });
   };
 
-  const handleMoreFilters = () => {
-    toast({
-      title: "More filters",
-      description: "Additional filter options coming soon.",
-    });
-  };
+  const handleExport = () => exportMutation.mutate();
+  const handleViewDetails = (sku: string) => setSelectedSku(sku);
 
-  const handleExport = () => {
-    exportMutation.mutate();
-  };
-
-  const handleViewDetails = (sku: string) => {
-    setSelectedSku(sku);
-  };
-
-  const handleFix = (sku: string) => {
+  const handleFix = (sku: string) =>
     fixMutation.mutate({
       sku,
       action: "update_attributes",
-      parameters: {
-        marketplace: mismatchData?.data.find((r) => r.sku === sku)?.marketplace,
-      },
+      parameters: { marketplace: mismatchData?.data.find((r) => r.sku === sku)?.marketplace },
     });
-  };
 
   const getDisplayValue = (row: MismatchRow, field: "title" | "description") =>
     localEdits[row.sku]?.[field] ?? row[field] ?? "";
@@ -413,19 +401,14 @@ export default function MismatchEngine() {
     setEditingValue("");
   };
 
-  const cancelEdit = () => {
-    setEditingCell(null);
-    setEditingValue("");
-  };
+  const cancelEdit = () => { setEditingCell(null); setEditingValue(""); };
 
-  const toggleSelect = (sku: string) => {
+  const toggleSelect = (sku: string) =>
     setSelectedRowIds((prev) => {
       const next = new Set(prev);
-      if (next.has(sku)) next.delete(sku);
-      else next.add(sku);
+      if (next.has(sku)) next.delete(sku); else next.add(sku);
       return next;
     });
-  };
 
   const selectAll = () => {
     if (selectedRowIds.size === filteredData.length) setSelectedRowIds(new Set());
@@ -441,7 +424,7 @@ export default function MismatchEngine() {
       toast({ title: "Enter title or description", variant: "destructive" });
       return;
     }
-    skus.forEach((sku) => {
+    skus.forEach((sku) =>
       setLocalEdits((prev) => ({
         ...prev,
         [sku]: {
@@ -449,12 +432,12 @@ export default function MismatchEngine() {
           ...(title !== undefined && { title }),
           ...(description !== undefined && { description }),
         },
-      }));
-    });
+      }))
+    );
     updateDescriptionMutation.mutate({ skus, title, description });
   };
 
-  // Fallback dummy KPIs
+  // ── Derived data ──────────────────────────────────────────────────────────
   const dummyKpis: MismatchKPI[] = [
     { label: "Mismatch Rate", value: "3.2%", change: -12, status: "success" },
     { label: "Attribute Errors", value: "1,247", change: 8, status: "warning" },
@@ -465,21 +448,81 @@ export default function MismatchEngine() {
 
   const kpis = kpisData?.kpis.length ? kpisData.kpis : dummyKpis;
   const tableData = mismatchData?.data.length ? mismatchData.data : mockTableData;
-  // Client-side filter for mismatches only when viewMode is "mismatches" (reduces load if backend doesn't support mismatchesOnly)
-  const filteredData =
-    viewMode === "mismatches"
-      ? tableData.filter(
-          (row) =>
-            row.mismatchScore > 0 ||
-            (row.attributeErrors?.length ?? 0) > 0 ||
-            (row.localMissing?.length ?? 0) > 0
-        )
-      : tableData;
 
+  // Marketplace → region mapping for region filter (from file 1)
+  const marketplaceRegionMap: Record<string, string> = {
+    "amazon.in": "india", "flipkart": "india", "myntra": "india",
+    "takealot": "south_africa", "checkers": "south_africa", "woolworths": "south_africa", "makro": "south_africa",
+    "amazon.com": "global", "ebay": "global", "walmart": "global",
+    "shopify": "global", "magento": "global", "woocommerce": "global",
+  };
+
+  // Full client-side filtering (from file 1)
+  const filteredData = tableData.filter((row) => {
+    if (viewMode === "mismatches") {
+      const hasMismatch =
+        row.mismatchScore > 0 ||
+        (row.attributeErrors?.length ?? 0) > 0 ||
+        (row.localMissing?.length ?? 0) > 0;
+      if (!hasMismatch) return false;
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matches =
+        row.sku.toLowerCase().includes(q) ||
+        (row.title ?? "").toLowerCase().includes(q) ||
+        (row.description ?? "").toLowerCase().includes(q) ||
+        (row.issueType ?? "").toLowerCase().includes(q) ||
+        (row.marketplace ?? "").toLowerCase().includes(q) ||
+        (row.category ?? "").toLowerCase().includes(q);
+      if (!matches) return false;
+    }
+    if (category !== "all") {
+      if ((row.category ?? "").toLowerCase() !== category.toLowerCase()) return false;
+    }
+    if (marketplace !== "all") {
+      const mpKey = marketplace.replace("-", ".").toLowerCase();
+      if (!(row.marketplace ?? "").toLowerCase().includes(mpKey)) return false;
+    }
+    if (language !== "all") {
+      if (!(row.localMissing ?? []).includes(language)) return false;
+    }
+    if (region !== "all") {
+      const rowRegion = marketplaceRegionMap[(row.marketplace ?? "").toLowerCase()] ?? "global";
+      if (rowRegion !== region) return false;
+    }
+    if (issueType !== "all") {
+      const issueMap: Record<string, string> = { color: "color mismatch", size: "size mismatch", local: "localization" };
+      const expected = issueMap[issueType] ?? issueType;
+      if (!(row.issueType ?? "").toLowerCase().includes(expected)) return false;
+    }
+    return true;
+  });
+
+  // CSV rows filtered by mismatch-only toggle + search (from file 1)
+  const filteredCsvRows = colorCsv
+    ? colorCsv.rows
+        .filter((row) => {
+          if (csvMismatchOnly && row["Verdict"] === "Match") return false;
+          if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            const name = String(row["productDisplayName"] ?? "").toLowerCase();
+            const id = String(row["id"] ?? "").toLowerCase();
+            const color = String(row[colorCsv.color_column ?? "baseColour"] ?? "").toLowerCase();
+            const detected = String(row["detected_color"] ?? "").toLowerCase();
+            if (!name.includes(q) && !id.includes(q) && !color.includes(q) && !detected.includes(q)) return false;
+          }
+          return true;
+        })
+        .slice(0, 50)
+    : [];
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="p-4 lg:p-8 space-y-8 max-w-[1920px] mx-auto">
-        {/* Enhanced Header */}
+
+        {/* Header */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -510,651 +553,814 @@ export default function MismatchEngine() {
           </div>
         </div>
 
-      {/* Enhanced Filters Bar */}
-      <div className="rounded-xl p-5 border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg animate-fade-in" style={{ animationFillMode: 'forwards', animationDuration: '400ms' }}>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 flex-1 min-w-[250px] bg-background/50 rounded-lg border border-border/50 px-3 py-2 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-            <Search className="w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search SKUs, products, issues..." 
-              className="border-0 bg-transparent shadow-none focus-visible:ring-0 text-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="w-[140px] h-10 bg-background/50 border-border/50">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="fashion">Fashion</SelectItem>
-              <SelectItem value="electronics">Electronics</SelectItem>
-              <SelectItem value="home">Home</SelectItem>
-              <SelectItem value="beauty">Beauty</SelectItem>
-              <SelectItem value="grocery">Grocery</SelectItem>
-            </SelectContent>
-          </Select>
+        {/* Filters Bar */}
+        <div
+          className="rounded-xl p-5 border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg animate-fade-in"
+          style={{ animationFillMode: "forwards", animationDuration: "400ms" }}
+        >
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Search */}
+            <div className="flex items-center gap-2 flex-1 min-w-[250px] bg-background/50 rounded-lg border border-border/50 px-3 py-2 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+              <Search className="w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search SKUs, products, issues..."
+                className="border-0 bg-transparent shadow-none focus-visible:ring-0 text-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
 
-          <Select value={brand} onValueChange={setBrand}>
-            <SelectTrigger className="w-[140px] h-10 bg-background/50 border-border/50">
-              <SelectValue placeholder="Brand" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Brands</SelectItem>
-              <SelectItem value="brand1">Brand A</SelectItem>
-              <SelectItem value="brand2">Brand B</SelectItem>
-              <SelectItem value="brand3">Brand C</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className={cn("w-[140px] h-10 bg-background/50 border-border/50", category !== "all" && "border-primary/60 bg-primary/5 text-primary")}>
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="fashion">Fashion</SelectItem>
+                <SelectItem value="electronics">Electronics</SelectItem>
+                <SelectItem value="home">Home</SelectItem>
+                <SelectItem value="beauty">Beauty</SelectItem>
+                <SelectItem value="grocery">Grocery</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select value={marketplace} onValueChange={setMarketplace}>
-            <SelectTrigger className="w-[140px] h-10 bg-background/50 border-border/50">
-              <SelectValue placeholder="Marketplace" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Markets</SelectItem>
-              <SelectItem value="amazon">Amazon.in</SelectItem>
-              <SelectItem value="amazon-com">Amazon.com</SelectItem>
-              <SelectItem value="flipkart">Flipkart</SelectItem>
-              <SelectItem value="myntra">Myntra</SelectItem>
-              <SelectItem value="takealot">Takealot</SelectItem>
-              <SelectItem value="checkers">Checkers</SelectItem>
-              <SelectItem value="woolworths">Woolworths</SelectItem>
-              <SelectItem value="makro">Makro</SelectItem>
-              <SelectItem value="shopify">Shopify</SelectItem>
-              <SelectItem value="magento">Magento</SelectItem>
-              <SelectItem value="woocommerce">WooCommerce</SelectItem>
-              <SelectItem value="ebay">eBay</SelectItem>
-              <SelectItem value="walmart">Walmart</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={brand} onValueChange={setBrand}>
+              <SelectTrigger className={cn("w-[140px] h-10 bg-background/50 border-border/50", brand !== "all" && "border-primary/60 bg-primary/5 text-primary")}>
+                <SelectValue placeholder="Brand" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Brands</SelectItem>
+                <SelectItem value="brand1">Brand A</SelectItem>
+                <SelectItem value="brand2">Brand B</SelectItem>
+                <SelectItem value="brand3">Brand C</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select value={language} onValueChange={setLanguage}>
-            <SelectTrigger className="w-[140px] h-10 bg-background/50 border-border/50">
-              <SelectValue placeholder="Language" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Languages</SelectItem>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="hi">Hindi</SelectItem>
-              <SelectItem value="ta">Tamil</SelectItem>
-              <SelectItem value="te">Telugu</SelectItem>
-              <SelectItem value="bn">Bengali</SelectItem>
-              <SelectItem value="zu">Zulu</SelectItem>
-              <SelectItem value="af">Afrikaans</SelectItem>
-              <SelectItem value="xh">Xhosa</SelectItem>
-              <SelectItem value="es">Spanish</SelectItem>
-              <SelectItem value="fr">French</SelectItem>
-              <SelectItem value="ar">Arabic</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={marketplace} onValueChange={setMarketplace}>
+              <SelectTrigger className={cn("w-[140px] h-10 bg-background/50 border-border/50", marketplace !== "all" && "border-primary/60 bg-primary/5 text-primary")}>
+                <SelectValue placeholder="Marketplace" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Markets</SelectItem>
+                <SelectItem value="amazon">Amazon.in</SelectItem>
+                <SelectItem value="amazon-com">Amazon.com</SelectItem>
+                <SelectItem value="flipkart">Flipkart</SelectItem>
+                <SelectItem value="myntra">Myntra</SelectItem>
+                <SelectItem value="takealot">Takealot</SelectItem>
+                <SelectItem value="checkers">Checkers</SelectItem>
+                <SelectItem value="woolworths">Woolworths</SelectItem>
+                <SelectItem value="makro">Makro</SelectItem>
+                <SelectItem value="shopify">Shopify</SelectItem>
+                <SelectItem value="magento">Magento</SelectItem>
+                <SelectItem value="woocommerce">WooCommerce</SelectItem>
+                <SelectItem value="ebay">eBay</SelectItem>
+                <SelectItem value="walmart">Walmart</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select value={region} onValueChange={setRegion}>
-            <SelectTrigger className="w-[140px] h-10 bg-background/50 border-border/50">
-              <SelectValue placeholder="Country/Region" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Regions</SelectItem>
-              <SelectItem value="india">India</SelectItem>
-              <SelectItem value="south_africa">South Africa</SelectItem>
-              <SelectItem value="global">Global</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={language} onValueChange={setLanguage}>
+              <SelectTrigger className={cn("w-[140px] h-10 bg-background/50 border-border/50", language !== "all" && "border-primary/60 bg-primary/5 text-primary")}>
+                <SelectValue placeholder="Language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Languages</SelectItem>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="hi">Hindi</SelectItem>
+                <SelectItem value="ta">Tamil</SelectItem>
+                <SelectItem value="te">Telugu</SelectItem>
+                <SelectItem value="bn">Bengali</SelectItem>
+                <SelectItem value="zu">Zulu</SelectItem>
+                <SelectItem value="af">Afrikaans</SelectItem>
+                <SelectItem value="xh">Xhosa</SelectItem>
+                <SelectItem value="es">Spanish</SelectItem>
+                <SelectItem value="fr">French</SelectItem>
+                <SelectItem value="ar">Arabic</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select value={viewMode} onValueChange={(v) => setViewMode(v as "mismatches" | "all")}>
-            <SelectTrigger className="w-[160px] h-10 bg-background/50 border-border/50">
-              <SelectValue placeholder="View" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="mismatches">Mismatches only</SelectItem>
-              <SelectItem value="all">All (incl. matches)</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={region} onValueChange={setRegion}>
+              <SelectTrigger className={cn("w-[140px] h-10 bg-background/50 border-border/50", region !== "all" && "border-primary/60 bg-primary/5 text-primary")}>
+                <SelectValue placeholder="Country/Region" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Regions</SelectItem>
+                <SelectItem value="india">India</SelectItem>
+                <SelectItem value="south_africa">South Africa</SelectItem>
+                <SelectItem value="global">Global</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select value={issueType} onValueChange={setIssueType}>
-            <SelectTrigger className="w-[140px] h-10 bg-background/50 border-border/50">
-              <SelectValue placeholder="Issue Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Issues</SelectItem>
-              <SelectItem value="color">Color Mismatch</SelectItem>
-              <SelectItem value="size">Size Mismatch</SelectItem>
-              <SelectItem value="local">Localization</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={viewMode} onValueChange={(v) => setViewMode(v as "mismatches" | "all")}>
+              <SelectTrigger className="w-[160px] h-10 bg-background/50 border-border/50">
+                <SelectValue placeholder="View" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mismatches">Mismatches only</SelectItem>
+                <SelectItem value="all">All (incl. matches)</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-2 h-10 hover:bg-muted/50 transition-colors" 
-            onClick={handleMoreFilters}
-          >
-            <Filter className="w-4 h-4" />
-            More Filters
-          </Button>
+            <Select value={issueType} onValueChange={setIssueType}>
+              <SelectTrigger className={cn("w-[140px] h-10 bg-background/50 border-border/50", issueType !== "all" && "border-primary/60 bg-primary/5 text-primary")}>
+                <SelectValue placeholder="Issue Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Issues</SelectItem>
+                <SelectItem value="color">Color Mismatch</SelectItem>
+                <SelectItem value="size">Size Mismatch</SelectItem>
+                <SelectItem value="local">Localization</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-muted-foreground h-10 hover:text-foreground hover:bg-muted/50 transition-colors" 
-            onClick={handleClearFilters}
-          >
-            Clear all
-          </Button>
-        </div>
-      </div>
-
-      {/* Enhanced KPI Row */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-primary" />
-          <h2 className="text-xl font-semibold text-foreground">Performance Metrics</h2>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {kpisLoading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-28 rounded-xl bg-muted/50 animate-pulse border border-border/50" />
-            ))
-          ) : (
-            kpis.map((kpi, index) => (
-              <div 
-                key={kpi.label}
-                className={cn(
-                  "rounded-xl p-5 border-2 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]",
-                  "bg-gradient-to-br from-card/50 to-card/30 border-border/50 backdrop-blur-sm",
-                  "animate-fade-in"
-                )}
-                style={{ 
-                  animationDelay: `${index * 50}ms`, 
-                  animationFillMode: 'forwards',
-                  animationDuration: '400ms'
-                }}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-medium text-muted-foreground">{kpi.label}</span>
-                  <div className="flex items-center gap-1.5">
-                    <Badge 
-                      variant="secondary" 
-                      className={cn(
-                        "text-xs font-semibold",
-                        kpi.change < 0 ? "bg-success/10 text-success border-success/20" : "bg-warning/10 text-warning border-warning/20"
-                      )}
-                    >
-                      {kpi.change > 0 ? '+' : ''}{kpi.change}%
-                    </Badge>
-                    {kpisData && (
-                      <Badge className="text-[8px] px-1.5 py-0.5 bg-success/20 text-success border-success/30">
-                        API
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-foreground">{kpi.value}</div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Image-Description Audit Table with inline and bulk editing */}
-      <div className="rounded-xl overflow-hidden border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg animate-fade-in">
-        <div className="p-5 border-b border-border/50 bg-gradient-to-r from-muted/30 to-transparent flex items-center justify-between flex-wrap gap-3">
-          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-primary" />
-            Image-Description Audit Table
-          </h3>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={selectAll} className="text-xs">
-              {selectedRowIds.size === filteredData.length ? "Deselect all" : "Select all"}
+            <Button variant="outline" size="sm" className="gap-2 h-10 hover:bg-muted/50 transition-colors" onClick={() => {}}>
+              <Filter className="w-4 h-4" />
+              More Filters
             </Button>
+
+            <Button variant="ghost" size="sm" className="text-muted-foreground h-10 hover:text-foreground hover:bg-muted/50 transition-colors" onClick={handleClearFilters}>
+              Clear all
+            </Button>
+          </div>
+        </div>
+
+        {/* Active Filter Chips (from file 1) */}
+        {(searchQuery || category !== "all" || brand !== "all" || marketplace !== "all" || language !== "all" || region !== "all" || issueType !== "all") && (
+          <div className="flex flex-wrap items-center gap-2 px-1">
+            <span className="text-xs text-muted-foreground font-medium shrink-0">Active filters:</span>
+            {searchQuery && (
+              <Badge variant="secondary" className="gap-1 text-xs font-normal">
+                Search: &ldquo;{searchQuery}&rdquo;
+                <button onClick={() => setSearchQuery("")} className="ml-1 opacity-60 hover:opacity-100">
+                  <XCircle className="w-3 h-3" />
+                </button>
+              </Badge>
+            )}
+            {category !== "all" && (
+              <Badge variant="secondary" className="gap-1 text-xs font-normal capitalize">
+                Category: {category}
+                <button onClick={() => setCategory("all")} className="ml-1 opacity-60 hover:opacity-100">
+                  <XCircle className="w-3 h-3" />
+                </button>
+              </Badge>
+            )}
+            {brand !== "all" && (
+              <Badge variant="secondary" className="gap-1 text-xs font-normal">
+                Brand: {brand}
+                <button onClick={() => setBrand("all")} className="ml-1 opacity-60 hover:opacity-100">
+                  <XCircle className="w-3 h-3" />
+                </button>
+              </Badge>
+            )}
+            {marketplace !== "all" && (
+              <Badge variant="secondary" className="gap-1 text-xs font-normal capitalize">
+                Market: {marketplace.replace("-", ".")}
+                <button onClick={() => setMarketplace("all")} className="ml-1 opacity-60 hover:opacity-100">
+                  <XCircle className="w-3 h-3" />
+                </button>
+              </Badge>
+            )}
+            {language !== "all" && (
+              <Badge variant="secondary" className="gap-1 text-xs font-normal uppercase">
+                Language: {language}
+                <button onClick={() => setLanguage("all")} className="ml-1 opacity-60 hover:opacity-100">
+                  <XCircle className="w-3 h-3" />
+                </button>
+              </Badge>
+            )}
+            {region !== "all" && (
+              <Badge variant="secondary" className="gap-1 text-xs font-normal capitalize">
+                Region: {region.replace("_", " ")}
+                <button onClick={() => setRegion("all")} className="ml-1 opacity-60 hover:opacity-100">
+                  <XCircle className="w-3 h-3" />
+                </button>
+              </Badge>
+            )}
+            {issueType !== "all" && (
+              <Badge variant="secondary" className="gap-1 text-xs font-normal">
+                Issue: {issueType === "color" ? "Color Mismatch" : issueType === "size" ? "Size Mismatch" : "Localization"}
+                <button onClick={() => setIssueType("all")} className="ml-1 opacity-60 hover:opacity-100">
+                  <XCircle className="w-3 h-3" />
+                </button>
+              </Badge>
+            )}
             <span className="text-xs text-muted-foreground">
-              {filteredData.length} row{filteredData.length !== 1 ? "s" : ""}
+              — {filteredData.length} result{filteredData.length !== 1 ? "s" : ""}
             </span>
-          </div>
-        </div>
-
-        {/* Bulk update bar */}
-        {selectedRowIds.size > 0 && (
-          <div className="p-4 bg-primary/5 border-b border-border/50 flex flex-wrap items-center gap-3">
-            <span className="text-sm font-medium text-foreground">{selectedRowIds.size} selected</span>
-            <Input
-              placeholder="Bulk title..."
-              className="max-w-[220px] h-9 text-sm"
-              value={bulkTitle}
-              onChange={(e) => setBulkTitle(e.target.value)}
-            />
-            <Input
-              placeholder="Bulk description..."
-              className="max-w-[280px] h-9 text-sm"
-              value={bulkDescription}
-              onChange={(e) => setBulkDescription(e.target.value)}
-            />
-            <Button size="sm" onClick={handleBulkApply} disabled={updateDescriptionMutation.isPending}>
-              {updateDescriptionMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              Apply to selected
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setSelectedRowIds(new Set())}>
-              Clear selection
-            </Button>
+            <button onClick={handleClearFilters} className="text-xs text-primary hover:underline ml-1">
+              Clear all
+            </button>
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/40 border-b border-border/50">
-                <th className="text-left font-medium text-muted-foreground p-3 w-10">
-                  <input
-                    type="checkbox"
-                    checked={filteredData.length > 0 && selectedRowIds.size === filteredData.length}
-                    onChange={selectAll}
-                    className="rounded border-border"
-                  />
-                </th>
-                <th className="text-left font-medium text-muted-foreground p-3">SKU</th>
-                <th className="text-left font-medium text-muted-foreground p-3">Marketplace</th>
-                <th className="text-left font-medium text-muted-foreground p-3 min-w-[180px]">Title</th>
-                <th className="text-left font-medium text-muted-foreground p-3 min-w-[220px]">Description</th>
-                <th className="text-left font-medium text-muted-foreground p-3">Score</th>
-                <th className="text-left font-medium text-muted-foreground p-3">Issue</th>
-                <th className="text-left font-medium text-muted-foreground p-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mismatchLoading ? (
-                <tr>
-                  <td colSpan={8} className="p-8 text-center">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
-                  </td>
-                </tr>
-              ) : (
-                filteredData.map((row) => (
-                  <tr
-                    key={row.sku}
-                    className={cn(
-                      "border-t border-border/30 hover:bg-muted/20 transition-colors",
-                      selectedRowIds.has(row.sku) && "bg-primary/5"
-                    )}
-                  >
-                    <td className="p-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedRowIds.has(row.sku)}
-                        onChange={() => toggleSelect(row.sku)}
-                        className="rounded border-border"
-                      />
-                    </td>
-                    <td className="p-3 font-mono text-xs">{row.sku}</td>
-                    <td className="p-3 text-muted-foreground">{row.marketplace}</td>
-                    <td className="p-3">
-                      {editingCell?.sku === row.sku && editingCell?.field === "title" ? (
-                        <div className="flex items-center gap-1">
-                          <Input
-                            autoFocus
-                            value={editingValue}
-                            onChange={(e) => setEditingValue(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") saveEdit();
-                              if (e.key === "Escape") cancelEdit();
-                            }}
-                            onBlur={saveEdit}
-                            className="h-8 text-xs min-w-[160px]"
-                          />
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={saveEdit}>
-                            <Check className="w-3.5 h-3.5 text-success" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={cancelEdit}>
-                            <XCircle className="w-3.5 h-3.5 text-destructive" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => startEdit(row.sku, "title")}
-                          className="text-left w-full flex items-center gap-1.5 group hover:bg-muted/50 rounded px-2 py-1 -mx-2 -my-1 min-h-[32px]"
-                        >
-                          <span className="text-foreground truncate max-w-[200px]">
-                            {getDisplayValue(row, "title") || "—"}
-                          </span>
-                          <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-60 text-muted-foreground shrink-0" />
-                        </button>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      {editingCell?.sku === row.sku && editingCell?.field === "description" ? (
-                        <div className="flex items-center gap-1">
-                          <Input
-                            autoFocus
-                            value={editingValue}
-                            onChange={(e) => setEditingValue(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") saveEdit();
-                              if (e.key === "Escape") cancelEdit();
-                            }}
-                            onBlur={saveEdit}
-                            className="h-8 text-xs min-w-[200px]"
-                          />
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={saveEdit}>
-                            <Check className="w-3.5 h-3.5 text-success" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={cancelEdit}>
-                            <XCircle className="w-3.5 h-3.5 text-destructive" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => startEdit(row.sku, "description")}
-                          className="text-left w-full flex items-center gap-1.5 group hover:bg-muted/50 rounded px-2 py-1 -mx-2 -my-1 min-h-[32px]"
-                        >
-                          <span className="text-muted-foreground truncate max-w-[240px]">
-                            {getDisplayValue(row, "description") || "—"}
-                          </span>
-                          <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-60 text-muted-foreground shrink-0" />
-                        </button>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      <Badge variant={row.mismatchScore >= 70 ? "destructive" : row.mismatchScore >= 40 ? "secondary" : "outline"}>
-                        {row.mismatchScore}
-                      </Badge>
-                    </td>
-                    <td className="p-3 text-muted-foreground text-xs">{row.issueType}</td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => handleViewDetails(row.sku)}>
-                          <Eye className="w-3.5 h-3.5 mr-1" />
-                          Details
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => handleFix(row.sku)}>
-                          Fix
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Color Mismatch CSV Section */}
-        <div className="lg:col-span-2">
-          <div className="rounded-xl overflow-hidden border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg animate-fade-in" style={{ animationDelay: '200ms', animationFillMode: 'forwards', animationDuration: '500ms' }}>
-            <div className="p-5 border-b border-border/50 bg-gradient-to-r from-muted/30 to-transparent flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-destructive" />
-                  Color Mismatch CSV (offline pipeline)
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Snapshot of the processed CSV used by the Product Color Mismatch detector.
-                </p>
-              </div>
-              <Badge variant="outline" className="text-[10px]">
-                CSV
-              </Badge>
-            </div>
-
-            {isColorCsvLoading && (
-              <div className="p-8 text-center">
-                <div className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Loading CSV snapshot from backend...</span>
-                </div>
-              </div>
-            )}
-
-            {isColorCsvError && (
-              <div className="p-8 text-center">
-                <div className="flex flex-col items-center gap-2">
-                  <AlertTriangle className="w-8 h-8 text-destructive" />
-                  <p className="text-sm text-destructive">{colorCsvError?.message ?? "Failed to load CSV data"}</p>
-                </div>
-              </div>
-            )}
-
-            {colorCsv && !isColorCsvLoading && !isColorCsvError && (
-              <div className="overflow-x-auto p-4">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-gradient-to-r from-muted/40 to-muted/20 border-b border-border/50">
-                      <th className="text-left font-medium text-muted-foreground p-3 uppercase tracking-wider">Image</th>
-                      <th className="text-left font-medium text-muted-foreground p-3 uppercase tracking-wider">ID</th>
-                      <th className="text-left font-medium text-muted-foreground p-3 uppercase tracking-wider">Product</th>
-                      <th className="text-left font-medium text-muted-foreground p-3 uppercase tracking-wider">Catalog Color</th>
-                      <th className="text-left font-medium text-muted-foreground p-3 uppercase tracking-wider">Detected Color</th>
-                      <th className="text-left font-medium text-muted-foreground p-3 uppercase tracking-wider">Verdict</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {colorCsv.rows.slice(0, 20).map((row, idx) => (
-                      <tr
-                        key={(row["id"] as string | number | undefined) ?? idx}
-                        className="border-t border-border/30 hover:bg-muted/30 transition-all duration-200"
-                      >
-                        <td className="p-3">
-                          <ProductImage
-                            productId={String(row["id"] ?? "")}
-                            index={idx}
-                            alt={String(row["productDisplayName"] ?? "Product")}
-                            className="w-16 h-16"
-                            fallbackClassName="w-16 h-16"
-                          />
-                        </td>
-                        <td className="p-3 font-mono text-sm">
-                          {String(row["id"] ?? "-")}
-                        </td>
-                        <td className="p-3 text-sm">
-                          {String(row["productDisplayName"] ?? "")}
-                        </td>
-                        <td className="p-3 text-sm">
-                          {String(
-                            row[colorCsv.color_column ?? "baseColour"] ?? ""
-                          )}
-                        </td>
-                        <td className="p-3 text-sm">
-                          {String(row["detected_color"] ?? "")}
-                        </td>
-                        <td className="p-3">
-                          <Badge
-                            variant={
-                              row["Verdict"] === "Match" ? "outline" : "destructive"
-                            }
-                            className="text-xs"
-                          >
-                            {String(row["Verdict"] ?? "")}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <p className="mt-4 text-xs text-muted-foreground text-center">
-                  Showing first 20 rows from{" "}
-                  <code className="bg-muted px-1.5 py-0.5 rounded">hf_products_with_verdict.csv</code>.
-                </p>
-              </div>
-            )}
+        {/* KPI Row */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold text-foreground">Performance Metrics</h2>
           </div>
-        </div>
-
-        {/* Enhanced Right Panels */}
-        <div className="space-y-6">
-          {/* Panel A: Attribute Mismatch Visualizer */}
-          <div className="rounded-xl p-6 border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg animate-fade-in" style={{ animationDelay: '300ms', animationFillMode: 'forwards', animationDuration: '500ms' }}>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Eye className="w-4 h-4 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground">Attribute Mismatch Visualizer</h3>
-            </div>
-            <p className="text-xs text-muted-foreground mb-4">
-              {selectedSku ? `Side-by-side comparison for ${selectedSku}` : "Select a SKU to view attribute comparison"}
-            </p>
-            
-            {!selectedSku ? (
-              <div className="text-center py-8">
-                <p className="text-sm text-muted-foreground">Click "View Details" on a SKU to see attribute comparison</p>
-              </div>
-            ) : attributeLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-              </div>
-            ) : attributeData ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="font-medium text-muted-foreground">AI-Detected</div>
-                  <div className="font-medium text-muted-foreground">Marketplace Listing</div>
-                </div>
-                
-                {attributeData.comparison.map((attr) => (
-                  <div key={attr.attribute} className="p-3 bg-muted/30 rounded-lg">
-                    <div className="grid grid-cols-2 gap-3 items-center">
-                      <div>
-                        <div className="text-xs text-muted-foreground mb-1">{attr.attribute}</div>
-                        <div className="text-sm font-medium text-foreground">{attr.aiDetected}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground mb-1">{attr.attribute}</div>
-                        <div className={cn(
-                          "text-sm font-medium",
-                          attr.match ? "text-foreground" : "text-destructive"
-                        )}>
-                          {attr.marketplaceListing}
-                        </div>
-                        {attr.match ? (
-                          <CheckCircle className="w-3 h-3 text-success mt-1" />
-                        ) : (
-                          <XCircle className="w-3 h-3 text-destructive mt-1" />
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {kpisLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-28 rounded-xl bg-muted/50 animate-pulse border border-border/50" />
+              ))
+            ) : (
+              kpis.map((kpi, index) => (
+                <div
+                  key={kpi.label}
+                  className={cn(
+                    "rounded-xl p-5 border-2 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]",
+                    "bg-gradient-to-br from-card/50 to-card/30 border-border/50 backdrop-blur-sm animate-fade-in"
+                  )}
+                  style={{ animationDelay: `${index * 50}ms`, animationFillMode: "forwards", animationDuration: "400ms" }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-medium text-muted-foreground">{kpi.label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          "text-xs font-semibold",
+                          kpi.change < 0 ? "bg-success/10 text-success border-success/20" : "bg-warning/10 text-warning border-warning/20"
                         )}
-                      </div>
+                      >
+                        {kpi.change > 0 ? "+" : ""}{kpi.change}%
+                      </Badge>
+                      {/* API badge shown when data comes from live API (from file 1) */}
+                      {kpisData && (
+                        <Badge className="text-[8px] px-1.5 py-0.5 bg-success/20 text-success border-success/30">
+                          API
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-sm text-muted-foreground">No attribute data available</p>
-              </div>
+                  <div className="text-2xl font-bold text-foreground">{kpi.value}</div>
+                </div>
+              ))
             )}
+          </div>
+        </div>
 
-            <div className="mt-4 pt-4 border-t border-border/30">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full gap-2"
-                onClick={() => toast({
-                  title: "View comparison",
-                  description: "Opening full attribute comparison...",
-                })}
-              >
-                <Eye className="w-4 h-4" />
-                View Full Comparison
+        {/* Image-Description Audit Table */}
+        <div className="rounded-xl overflow-hidden border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg animate-fade-in">
+          <div className="p-5 border-b border-border/50 bg-gradient-to-r from-muted/30 to-transparent flex items-center justify-between flex-wrap gap-3">
+            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              Image-Description Audit Table
+            </h3>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={selectAll} className="text-xs">
+                {selectedRowIds.size === filteredData.length ? "Deselect all" : "Select all"}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                {filteredData.length} row{filteredData.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+          </div>
+
+          {/* Bulk update bar */}
+          {selectedRowIds.size > 0 && (
+            <div className="p-4 bg-primary/5 border-b border-border/50 flex flex-wrap items-center gap-3">
+              <span className="text-sm font-medium text-foreground">{selectedRowIds.size} selected</span>
+              <Input
+                placeholder="Bulk title..."
+                className="max-w-[220px] h-9 text-sm"
+                value={bulkTitle}
+                onChange={(e) => setBulkTitle(e.target.value)}
+              />
+              <Input
+                placeholder="Bulk description..."
+                className="max-w-[280px] h-9 text-sm"
+                value={bulkDescription}
+                onChange={(e) => setBulkDescription(e.target.value)}
+              />
+              <Button size="sm" onClick={handleBulkApply} disabled={updateDescriptionMutation.isPending}>
+                {updateDescriptionMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Apply to selected
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedRowIds(new Set())}>
+                Clear selection
               </Button>
             </div>
-          </div>
+          )}
 
-          {/* Panel B: Localization Panel */}
-          <div className="rounded-xl p-6 border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg animate-fade-in" style={{ animationDelay: '400ms', animationFillMode: 'forwards', animationDuration: '500ms' }}>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 rounded-lg bg-info/10">
-                <Languages className="w-4 h-4 text-info" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground">Localization Panel</h3>
-            </div>
-            <p className="text-xs text-muted-foreground mb-4">
-              {selectedSku ? `Localization status for ${selectedSku}` : "Select a SKU to view localization"}
-            </p>
-            
-            {!selectedSku ? (
-              <div className="text-center py-8">
-                <p className="text-sm text-muted-foreground">Click "View Details" on a SKU to see localization status</p>
-              </div>
-            ) : localizationLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-              </div>
-            ) : localizationData ? (
-              <>
-                <div className="space-y-4">
-                  {Object.entries(localizationData.localization).map(([region, langs]) => {
-                    const regionEmojis: Record<string, string> = {
-                      india: "🇮🇳",
-                      south_africa: "🇿🇦",
-                      global: "🌍",
-                    };
-                    const regionNames: Record<string, string> = {
-                      india: "India",
-                      south_africa: "South Africa",
-                      global: "Global",
-                    };
-                    const langNames: Record<string, string> = {
-                      en: 'English', hi: 'Hindi', ta: 'Tamil', te: 'Telugu', bn: 'Bengali',
-                      zu: 'Zulu', af: 'Afrikaans', xh: 'Xhosa',
-                      es: 'Spanish', fr: 'French', ar: 'Arabic'
-                    };
-                    
-                    return (
-                      <div key={region}>
-                        <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                          <span>{regionEmojis[region] || "🌍"}</span> {regionNames[region] || region}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/40 border-b border-border/50">
+                  <th className="text-left font-medium text-muted-foreground p-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={filteredData.length > 0 && selectedRowIds.size === filteredData.length}
+                      onChange={selectAll}
+                      className="rounded border-border"
+                    />
+                  </th>
+                  <th className="text-left font-medium text-muted-foreground p-3">SKU</th>
+                  <th className="text-left font-medium text-muted-foreground p-3">Marketplace</th>
+                  <th className="text-left font-medium text-muted-foreground p-3 min-w-[180px]">Title</th>
+                  <th className="text-left font-medium text-muted-foreground p-3 min-w-[220px]">Description</th>
+                  <th className="text-left font-medium text-muted-foreground p-3">Score</th>
+                  <th className="text-left font-medium text-muted-foreground p-3">Issue</th>
+                  <th className="text-left font-medium text-muted-foreground p-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mismatchLoading ? (
+                  <tr>
+                    <td colSpan={8} className="p-8 text-center">
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
+                    </td>
+                  </tr>
+                ) : (
+                  filteredData.map((row) => (
+                    <tr
+                      key={row.sku}
+                      className={cn(
+                        "border-t border-border/30 hover:bg-muted/20 transition-colors",
+                        selectedRowIds.has(row.sku) && "bg-primary/5"
+                      )}
+                    >
+                      <td className="p-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedRowIds.has(row.sku)}
+                          onChange={() => toggleSelect(row.sku)}
+                          className="rounded border-border"
+                        />
+                      </td>
+                      <td className="p-3 font-mono text-xs">{row.sku}</td>
+                      <td className="p-3 text-muted-foreground">{row.marketplace}</td>
+
+                      {/* Title cell */}
+                      <td className="p-3">
+                        {editingCell?.sku === row.sku && editingCell?.field === "title" ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              autoFocus
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }}
+                              onBlur={saveEdit}
+                              className="h-8 text-xs min-w-[160px]"
+                            />
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={saveEdit}>
+                              <Check className="w-3.5 h-3.5 text-success" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={cancelEdit}>
+                              <XCircle className="w-3.5 h-3.5 text-destructive" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startEdit(row.sku, "title")}
+                            className="text-left w-full flex items-center gap-1.5 group hover:bg-muted/50 rounded px-2 py-1 -mx-2 -my-1 min-h-[32px]"
+                          >
+                            <span className="text-foreground truncate max-w-[200px]">
+                              {getDisplayValue(row, "title") || "—"}
+                            </span>
+                            <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-60 text-muted-foreground shrink-0" />
+                          </button>
+                        )}
+                      </td>
+
+                      {/* Description cell */}
+                      <td className="p-3">
+                        {editingCell?.sku === row.sku && editingCell?.field === "description" ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              autoFocus
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }}
+                              onBlur={saveEdit}
+                              className="h-8 text-xs min-w-[200px]"
+                            />
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={saveEdit}>
+                              <Check className="w-3.5 h-3.5 text-success" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={cancelEdit}>
+                              <XCircle className="w-3.5 h-3.5 text-destructive" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startEdit(row.sku, "description")}
+                            className="text-left w-full flex items-center gap-1.5 group hover:bg-muted/50 rounded px-2 py-1 -mx-2 -my-1 min-h-[32px]"
+                          >
+                            <span className="text-muted-foreground truncate max-w-[240px]">
+                              {getDisplayValue(row, "description") || "—"}
+                            </span>
+                            <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-60 text-muted-foreground shrink-0" />
+                          </button>
+                        )}
+                      </td>
+
+                      <td className="p-3">
+                        <Badge variant={row.mismatchScore >= 70 ? "destructive" : row.mismatchScore >= 40 ? "secondary" : "outline"}>
+                          {row.mismatchScore}
+                        </Badge>
+                      </td>
+                      <td className="p-3 text-muted-foreground text-xs">{row.issueType}</td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => handleViewDetails(row.sku)}>
+                            <Eye className="w-3.5 h-3.5 mr-1" />
+                            Details
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => handleFix(row.sku)}>
+                            Fix
+                          </Button>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          {Object.entries(langs).map(([lang, status]) => {
-                            const isMissing = status.status === "missing";
-                            const isPending = status.status === "pending";
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Color Mismatch CSV Section (full file-1 version with toggle, select-all, bulk update) */}
+          <div className="lg:col-span-2">
+            <div
+              className="rounded-xl overflow-hidden border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg animate-fade-in"
+              style={{ animationDelay: "200ms", animationFillMode: "forwards", animationDuration: "500ms" }}
+            >
+              <div className="p-5 border-b border-border/50 bg-gradient-to-r from-muted/30 to-transparent flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-destructive" />
+                    Color Mismatch CSV (offline pipeline)
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Snapshot of the processed CSV used by the Product Color Mismatch detector.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={csvMismatchOnly ? "default" : "outline"}
+                    size="sm"
+                    className="text-xs h-8"
+                    onClick={() => setCsvMismatchOnly((v) => !v)}
+                  >
+                    {csvMismatchOnly ? "Mismatches only" : "All results"}
+                  </Button>
+                  <Badge variant="outline" className="text-[10px]">CSV</Badge>
+                </div>
+              </div>
+
+              {isColorCsvLoading && (
+                <div className="p-8 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Loading CSV snapshot from backend...</span>
+                  </div>
+                </div>
+              )}
+
+              {isColorCsvError && (
+                <div className="p-8 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <AlertTriangle className="w-8 h-8 text-destructive" />
+                    <p className="text-sm text-destructive">{colorCsvError?.message ?? "Failed to load CSV data"}</p>
+                  </div>
+                </div>
+              )}
+
+              {colorCsv && !isColorCsvLoading && !isColorCsvError && (
+                <>
+                  {/* CSV bulk update bar */}
+                  {csvSelectedIds.size > 0 && (
+                    <div className="p-4 bg-primary/5 border-b border-border/50 flex flex-wrap items-center gap-3">
+                      <span className="text-sm font-medium text-foreground">{csvSelectedIds.size} selected</span>
+                      <Input
+                        placeholder="Bulk product name..."
+                        className="max-w-[280px] h-9 text-sm"
+                        value={csvBulkName}
+                        onChange={(e) => setCsvBulkName(e.target.value)}
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          const name = csvBulkName.trim();
+                          if (!name) { toast({ title: "Enter a product name", variant: "destructive" }); return; }
+                          csvSelectedIds.forEach((id) =>
+                            setCsvLocalEdits((edits) => ({ ...edits, [id]: name }))
+                          );
+                          setCsvSelectedIds(new Set());
+                          setCsvBulkName("");
+                          toast({ title: "Bulk update applied", description: `${csvSelectedIds.size} product(s) updated.` });
+                        }}
+                      >
+                        <Check className="w-4 h-4 mr-1" />
+                        Apply to selected
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setCsvSelectedIds(new Set())}>
+                        Clear selection
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="overflow-x-auto p-4">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-muted/40 to-muted/20 border-b border-border/50">
+                          <th className="text-left font-medium text-muted-foreground p-3 w-10">
+                            <input
+                              type="checkbox"
+                              checked={filteredCsvRows.length > 0 && csvSelectedIds.size === filteredCsvRows.length}
+                              onChange={() => {
+                                if (csvSelectedIds.size === filteredCsvRows.length) setCsvSelectedIds(new Set());
+                                else setCsvSelectedIds(new Set(filteredCsvRows.map((r) => String(r["id"] ?? ""))));
+                              }}
+                              className="rounded border-border"
+                            />
+                          </th>
+                          <th className="text-left font-medium text-muted-foreground p-3 uppercase tracking-wider">Image</th>
+                          <th className="text-left font-medium text-muted-foreground p-3 uppercase tracking-wider">ID</th>
+                          <th className="text-left font-medium text-muted-foreground p-3 uppercase tracking-wider min-w-[200px]">Product</th>
+                          <th className="text-left font-medium text-muted-foreground p-3 uppercase tracking-wider">Catalog Color</th>
+                          <th className="text-left font-medium text-muted-foreground p-3 uppercase tracking-wider">Detected Color</th>
+                          <th className="text-left font-medium text-muted-foreground p-3 uppercase tracking-wider">Verdict</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredCsvRows.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">
+                              {csvMismatchOnly ? "No mismatches found." : "No data available."}
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredCsvRows.map((row, idx) => {
+                            const rowId = String(row["id"] ?? idx);
+                            const isSelected = csvSelectedIds.has(rowId);
+                            const isEditing = csvEditingId === rowId;
+                            const displayName = csvLocalEdits[rowId] ?? String(row["productDisplayName"] ?? "");
                             return (
-                              <Badge
-                                key={lang}
-                                variant={isMissing ? "destructive" : isPending ? "secondary" : "default"}
+                              <tr
+                                key={rowId}
                                 className={cn(
-                                  "text-xs",
-                                  isMissing && "bg-destructive/10 text-destructive",
-                                  isPending && "bg-warning/10 text-warning"
+                                  "border-t border-border/30 hover:bg-muted/30 transition-all duration-200",
+                                  isSelected && "bg-primary/5"
                                 )}
                               >
-                                {langNames[lang] || lang}
-                                {isMissing && <XCircle className="w-3 h-3 ml-1" />}
-                                {!isMissing && !isPending && <CheckCircle className="w-3 h-3 ml-1 text-success" />}
-                                {isPending && <AlertTriangle className="w-3 h-3 ml-1" />}
-                              </Badge>
+                                <td className="p-3">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() =>
+                                      setCsvSelectedIds((prev) => {
+                                        const next = new Set(prev);
+                                        if (next.has(rowId)) next.delete(rowId); else next.add(rowId);
+                                        return next;
+                                      })
+                                    }
+                                    className="rounded border-border"
+                                  />
+                                </td>
+                                <td className="p-3">
+                                  <ProductImage
+                                    productId={String(row["id"] ?? "")}
+                                    index={idx}
+                                    alt={displayName}
+                                    className="w-16 h-16"
+                                    fallbackClassName="w-16 h-16"
+                                  />
+                                </td>
+                                <td className="p-3 font-mono text-sm">{String(row["id"] ?? "-")}</td>
+                                <td className="p-3 text-sm">
+                                  {isEditing ? (
+                                    <div className="flex items-center gap-1">
+                                      <Input
+                                        autoFocus
+                                        value={csvEditingValue}
+                                        onChange={(e) => setCsvEditingValue(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter") {
+                                            setCsvLocalEdits((prev) => ({ ...prev, [rowId]: csvEditingValue.trim() }));
+                                            setCsvEditingId(null);
+                                            setCsvEditingValue("");
+                                          }
+                                          if (e.key === "Escape") { setCsvEditingId(null); setCsvEditingValue(""); }
+                                        }}
+                                        onBlur={() => {
+                                          setCsvLocalEdits((prev) => ({ ...prev, [rowId]: csvEditingValue.trim() }));
+                                          setCsvEditingId(null);
+                                          setCsvEditingValue("");
+                                        }}
+                                        className="h-8 text-xs min-w-[160px]"
+                                      />
+                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                                        setCsvLocalEdits((prev) => ({ ...prev, [rowId]: csvEditingValue.trim() }));
+                                        setCsvEditingId(null);
+                                        setCsvEditingValue("");
+                                      }}>
+                                        <Check className="w-3.5 h-3.5 text-success" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setCsvEditingId(null); setCsvEditingValue(""); }}>
+                                        <XCircle className="w-3.5 h-3.5 text-destructive" />
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => { setCsvEditingId(rowId); setCsvEditingValue(displayName); }}
+                                      className="text-left w-full flex items-center gap-1.5 group hover:bg-muted/50 rounded px-2 py-1 -mx-2 -my-1 min-h-[32px]"
+                                    >
+                                      <span className="text-foreground truncate max-w-[220px]">{displayName || "—"}</span>
+                                      <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-60 text-muted-foreground shrink-0" />
+                                    </button>
+                                  )}
+                                </td>
+                                <td className="p-3 text-sm">{String(row[colorCsv.color_column ?? "baseColour"] ?? "")}</td>
+                                <td className="p-3 text-sm">{String(row["detected_color"] ?? "")}</td>
+                                <td className="p-3">
+                                  <Badge variant={row["Verdict"] === "Match" ? "outline" : "destructive"} className="text-xs">
+                                    {String(row["Verdict"] ?? "")}
+                                  </Badge>
+                                </td>
+                              </tr>
                             );
-                          })}
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                    <p className="mt-4 text-xs text-muted-foreground text-center">
+                      Showing {filteredCsvRows.length} {csvMismatchOnly ? "mismatch" : ""} row{filteredCsvRows.length !== 1 ? "s" : ""} from{" "}
+                      <code className="bg-muted px-1.5 py-0.5 rounded">hf_products_with_verdict.csv</code>.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Right Panels */}
+          <div className="space-y-6">
+
+            {/* Panel A: Attribute Mismatch Visualizer */}
+            <div
+              className="rounded-xl p-6 border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg animate-fade-in"
+              style={{ animationDelay: "300ms", animationFillMode: "forwards", animationDuration: "500ms" }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Eye className="w-4 h-4 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">Attribute Mismatch Visualizer</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-4">
+                {selectedSku ? `Side-by-side comparison for ${selectedSku}` : "Select a SKU to view attribute comparison"}
+              </p>
+
+              {!selectedSku ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">Click "View Details" on a SKU to see attribute comparison</p>
+                </div>
+              ) : attributeLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : attributeData ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="font-medium text-muted-foreground">AI-Detected</div>
+                    <div className="font-medium text-muted-foreground">Marketplace Listing</div>
+                  </div>
+                  {attributeData.comparison.map((attr) => (
+                    <div key={attr.attribute} className="p-3 bg-muted/30 rounded-lg">
+                      <div className="grid grid-cols-2 gap-3 items-center">
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">{attr.attribute}</div>
+                          <div className="text-sm font-medium text-foreground">{attr.aiDetected}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">{attr.attribute}</div>
+                          <div className={cn("text-sm font-medium", attr.match ? "text-foreground" : "text-destructive")}>
+                            {attr.marketplaceListing}
+                          </div>
+                          {attr.match
+                            ? <CheckCircle className="w-3 h-3 text-success mt-1" />
+                            : <XCircle className="w-3 h-3 text-destructive mt-1" />}
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">No attribute data available</p>
+                </div>
+              )}
 
-                <div className="mt-4 pt-4 border-t border-border/30 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Missing Translations</span>
-                    <Badge variant="destructive" className="text-xs">{localizationData.missingTranslations}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Incorrect Translations</span>
-                    <Badge variant="secondary" className="text-xs bg-warning/10 text-warning">{localizationData.incorrectTranslations}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Non-compliant Keywords</span>
-                    <Badge variant="secondary" className="text-xs bg-success/10 text-success">{localizationData.nonCompliantKeywords}</Badge>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-sm text-muted-foreground">No localization data available</p>
+              <div className="mt-4 pt-4 border-t border-border/30">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2"
+                  onClick={() => toast({ title: "View comparison", description: "Opening full attribute comparison..." })}
+                >
+                  <Eye className="w-4 h-4" />
+                  View Full Comparison
+                </Button>
               </div>
-            )}
+            </div>
+
+            {/* Panel B: Localization Panel */}
+            <div
+              className="rounded-xl p-6 border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg animate-fade-in"
+              style={{ animationDelay: "400ms", animationFillMode: "forwards", animationDuration: "500ms" }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-2 rounded-lg bg-info/10">
+                  <Languages className="w-4 h-4 text-info" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">Localization Panel</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-4">
+                {selectedSku ? `Localization status for ${selectedSku}` : "Select a SKU to view localization"}
+              </p>
+
+              {!selectedSku ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">Click "View Details" on a SKU to see localization status</p>
+                </div>
+              ) : localizationLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : localizationData ? (
+                <>
+                  <div className="space-y-4">
+                    {Object.entries(localizationData.localization).map(([rgn, langs]) => {
+                      const regionEmojis: Record<string, string> = { india: "🇮🇳", south_africa: "🇿🇦", global: "🌍" };
+                      const regionNames: Record<string, string> = { india: "India", south_africa: "South Africa", global: "Global" };
+                      const langNames: Record<string, string> = {
+                        en: "English", hi: "Hindi", ta: "Tamil", te: "Telugu", bn: "Bengali",
+                        zu: "Zulu", af: "Afrikaans", xh: "Xhosa", es: "Spanish", fr: "French", ar: "Arabic",
+                      };
+                      return (
+                        <div key={rgn}>
+                          <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                            <span>{regionEmojis[rgn] || "🌍"}</span> {regionNames[rgn] || rgn}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {Object.entries(langs).map(([lang, status]) => {
+                              const isMissing = status.status === "missing";
+                              const isPending = status.status === "pending";
+                              return (
+                                <Badge
+                                  key={lang}
+                                  variant={isMissing ? "destructive" : isPending ? "secondary" : "default"}
+                                  className={cn(
+                                    "text-xs",
+                                    isMissing && "bg-destructive/10 text-destructive",
+                                    isPending && "bg-warning/10 text-warning"
+                                  )}
+                                >
+                                  {langNames[lang] || lang}
+                                  {isMissing && <XCircle className="w-3 h-3 ml-1" />}
+                                  {!isMissing && !isPending && <CheckCircle className="w-3 h-3 ml-1 text-success" />}
+                                  {isPending && <AlertTriangle className="w-3 h-3 ml-1" />}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-border/30 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Missing Translations</span>
+                      <Badge variant="destructive" className="text-xs">{localizationData.missingTranslations}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Incorrect Translations</span>
+                      <Badge variant="secondary" className="text-xs bg-warning/10 text-warning">{localizationData.incorrectTranslations}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Non-compliant Keywords</span>
+                      <Badge variant="secondary" className="text-xs bg-success/10 text-success">{localizationData.nonCompliantKeywords}</Badge>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">No localization data available</p>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
-        </div>
+
       </div>
     </div>
   );

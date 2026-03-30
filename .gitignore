@@ -25,3 +25,18 @@ dist-ssr
 
 # Environment files
 .env
+
+# Python cache
+__pycache__/
+**/__pycache__/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual env
+myenv/
+venv/
+.venv/
+env/
+ENV/
