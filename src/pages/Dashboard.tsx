@@ -441,7 +441,6 @@ const DATE_LABEL_MAP: Record<string, string> = {
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const [comparisonMode, setComparisonMode] = useState<"period" | "none">("none");
   const [dateRange, setDateRange] = useState("30d");
 
   const { data, isLoading, isError } = useQuery<ExecutiveKpisResponse>({
@@ -577,18 +576,7 @@ export default function Dashboard() {
                   <SelectItem value="1y">Last year</SelectItem>
                 </SelectContent>
               </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setComparisonMode(comparisonMode === "period" ? "none" : "period")}
-                className={cn(
-                  "h-10 transition-all duration-200",
-                  comparisonMode === "period" && "bg-primary/10 border-primary text-primary shadow-sm"
-                )}
-              >
-                <TrendingUp className="w-4 h-4 mr-2" />
-                Compare
-              </Button>
+
               <Button variant="outline" size="sm" onClick={handleShare} className="h-10 hover:bg-muted/50 transition-colors">
                 <Share2 className="w-4 h-4 mr-2" />
                 Share

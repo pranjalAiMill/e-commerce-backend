@@ -84,26 +84,6 @@ interface GeneratedView {
   imageUrl: string;
 }
 
-
-interface CostAnalysisResponse {
-  regionSavings: Array<{
-    region: string;
-    saved: string;
-    amount: number;
-    percent: number;
-  }>;
-  timeToPublish: {
-    before: number;
-    after: number;
-    unit: string;
-  };
-  categoryBreakdown: Array<{
-    cat: string;
-    percent: number;
-    color: string;
-  }>;
-}
-
 const iconMap: Record<string, LucideIcon> = {
   Camera,
   Clock,
@@ -318,12 +298,6 @@ export default function AIPhotoshoot() {
     console.log("Transformed templates:", transformed);
     return transformed;
   }, [backendTemplatesData]);
-
-  // Fetch cost analysis
-  const { data: costAnalysisData, isLoading: costAnalysisLoading } = useQuery<CostAnalysisResponse>({
-    queryKey: ["photoshoot", "cost-analysis"],
-    queryFn: () => apiClient.get<CostAnalysisResponse>("/photoshoot/cost-analysis?period=month"),
-  });
 
   // Fetch supported sizes dynamically (matching Streamlit behavior)
   const { data: supportedSizesData } = useQuery({
@@ -996,53 +970,6 @@ export default function AIPhotoshoot() {
         </TabsList>
 
         <TabsContent value="photoshoot" className="space-y-3 mt-0">
-          {/* KPI Row - Fills available width */}
-          <div className="hidden sm:block space-y-2">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-semibold text-foreground">Performance Metrics</h2>
-            </div>
-            <div className="grid grid-cols-5 gap-3">
-              {kpisLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-24 rounded-xl bg-muted/50 animate-pulse border border-border/50" />
-                ))
-              ) : (
-                kpis.map((kpi) => {
-                  const Icon = iconMap[kpi.icon] || Camera;
-                  return (
-                    <div 
-                      key={kpi.label}
-                      className={cn(
-                        "rounded-xl p-4 border transition-all duration-300 hover:shadow-md",
-                        "bg-gradient-to-br from-card/50 to-card/30 border-border/50 backdrop-blur-sm"
-                      )}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="p-1.5 rounded-lg bg-primary/10">
-                          <Icon className="w-3.5 h-3.5 text-primary" />
-                        </div>
-                        <span className="text-xs font-medium text-muted-foreground truncate">{kpi.label}</span>
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-xl font-bold text-foreground">{kpi.value}</span>
-                        <Badge 
-                          variant="secondary" 
-                          className={cn(
-                            "text-[10px] px-1.5 py-0.5",
-                            kpi.change > 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
-                          )}
-                        >
-                          {kpi.change > 0 ? '+' : ''}{kpi.change}%
-                        </Badge>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
       {/* Main Content - Balanced layout */}
       <div className="grid grid-cols-1 lg:grid-cols-9 gap-4 lg:gap-5">
         {/* Model Style Section - 4 of 9 columns (~44%) */}
@@ -1413,95 +1340,6 @@ export default function AIPhotoshoot() {
                   {mp}
                 </Badge>
               ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Enhanced Cost Efficiency Panel */}
-      <div className="rounded-xl p-6 lg:p-8 border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg animate-fade-in" style={{ animationDelay: '400ms', animationFillMode: 'forwards', animationDuration: '500ms' }}>
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-lg bg-success/10">
-            <DollarSign className="w-5 h-5 text-success" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground">Cost & Efficiency Analysis</h3>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-4 bg-success/5 rounded-xl">
-            <h4 className="text-sm font-medium text-foreground mb-2">Cost Savings by Region</h4>
-            <div className="space-y-3">
-              {costAnalysisLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                </div>
-              ) : costAnalysisData ? (
-                costAnalysisData.regionSavings.map((item) => (
-                <div key={item.region}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">{item.region}</span>
-                    <span className="font-medium text-foreground">{item.saved}</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-success rounded-full"
-                      style={{ width: `${item.percent}%` }}
-                    />
-                  </div>
-                </div>
-                ))
-              ) : null}
-            </div>
-          </div>
-
-          <div className="p-4 bg-info/5 rounded-xl">
-            <h4 className="text-sm font-medium text-foreground mb-2">Time to Publish</h4>
-            {costAnalysisData ? (
-              <div className="flex items-end gap-4 h-32">
-                <div className="flex-1 flex flex-col items-center">
-                  <div className="flex-1 w-full bg-muted rounded-t-lg relative">
-                    <div 
-                      className="absolute bottom-0 w-full bg-muted-foreground/30 rounded-t-lg"
-                      style={{ height: '80%' }}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground mt-2">Before</span>
-                  <span className="text-sm font-medium">{costAnalysisData.timeToPublish.before} {costAnalysisData.timeToPublish.unit}</span>
-                </div>
-                <div className="flex-1 flex flex-col items-center">
-                  <div className="flex-1 w-full bg-muted rounded-t-lg relative">
-                    <div 
-                      className="absolute bottom-0 w-full bg-info rounded-t-lg"
-                      style={{ height: `${(costAnalysisData.timeToPublish.after / costAnalysisData.timeToPublish.before) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground mt-2">After AI</span>
-                  <span className="text-sm font-medium text-info">{costAnalysisData.timeToPublish.after} {costAnalysisData.timeToPublish.unit}</span>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-32">
-                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-              </div>
-            )}
-          </div>
-
-          <div className="p-4 bg-primary/5 rounded-xl">
-            <h4 className="text-sm font-medium text-foreground mb-2">Category Breakdown</h4>
-            <div className="space-y-2">
-              {costAnalysisData ? (
-                costAnalysisData.categoryBreakdown.map((item) => (
-                <div key={item.cat} className="flex items-center gap-2">
-                  <div className={cn("w-3 h-3 rounded", item.color)} />
-                  <span className="text-sm text-muted-foreground flex-1">{item.cat}</span>
-                  <span className="text-sm font-medium">{item.percent}%</span>
-                </div>
-                ))
-              ) : (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                </div>
-              )}
             </div>
           </div>
         </div>
