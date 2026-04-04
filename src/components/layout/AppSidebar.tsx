@@ -76,10 +76,7 @@ const toolsItems: NavItem[] = [
   },
 ];
 
-const settingsItems: NavItem[] = [
-  { title: "Settings", url: "/settings", icon: Settings, description: "App settings" },
-  { title: "Help", url: "/help", icon: HelpCircle, description: "Get help" },
-];
+const settingsItems: NavItem[] = [];
 
 // --- Helper Component (Moved Outside to prevent re-renders) ---
 

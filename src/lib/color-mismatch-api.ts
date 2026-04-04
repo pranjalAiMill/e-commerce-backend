@@ -1,4 +1,4 @@
-const COLOR_MISMATCH_BASE_URL = import.meta.env.VITE_COLOR_MISMATCH_API_URL ?? "https://e-commerce-product-mismatch-f5dng9augvg2awah.westus2-01.azurewebsites.net";
+const COLOR_MISMATCH_BASE_URL = "http://localhost:8000";
 
 export interface ColorMismatchHealthResponse {
   status: string;
@@ -80,7 +80,7 @@ async function handleColorMismatchResponse<T>(res: Response): Promise<T> {
  * Check the health status of the Color Mismatch backend
  */
 export async function checkColorMismatchHealth(): Promise<ColorMismatchHealthResponse> {
-  const url = `${COLOR_MISMATCH_BASE_URL}/health`;
+  const url = `${COLOR_MISMATCH_BASE_URL}/color/health`;
 
   try {
     const res = await fetch(url, {
@@ -118,7 +118,7 @@ export async function checkColorMismatchHealth(): Promise<ColorMismatchHealthRes
  * Fetch the processed dataset (CSV) used by the color mismatch detector.
  */
 export async function getColorMismatchDataset(): Promise<DatasetResponse> {
-  const url = `${COLOR_MISMATCH_BASE_URL}/dataset`;
+  const url = `${COLOR_MISMATCH_BASE_URL}/color/dataset`;
 
   try {
     const res = await fetch(url, {
@@ -164,7 +164,7 @@ export async function detectColor(
   formData.append("top_k", topK.toString());
   formData.append("confidence_threshold", confidenceThreshold.toString());
 
-  const url = `${COLOR_MISMATCH_BASE_URL}/detect-color`;
+  const url = `${COLOR_MISMATCH_BASE_URL}/color/detect-color`;
 
   try {
     const res = await fetch(url, {
@@ -210,7 +210,7 @@ export async function matchColor(
   formData.append("expected_color", expectedColor);
   formData.append("detected_color", detectedColor);
 
-  const url = `${COLOR_MISMATCH_BASE_URL}/match-color`;
+  const url = `${COLOR_MISMATCH_BASE_URL}/color/match-color`;
 
   try {
     const res = await fetch(url, {
@@ -255,7 +255,7 @@ export async function detectAndMatch(
   formData.append("file", file);
   formData.append("expected_color", expectedColor);
 
-  const url = `${COLOR_MISMATCH_BASE_URL}/detect-and-match`;
+  const url = `${COLOR_MISMATCH_BASE_URL}/color/detect-and-match`;
 
   try {
     const res = await fetch(url, {
@@ -299,5 +299,5 @@ export function getProductImageUrl(productId: string | number, index?: number): 
     params.set("index", String(index));
   }
   const query = params.toString();
-  return `${COLOR_MISMATCH_BASE_URL}/image/${id}${query ? `?${query}` : ""}`;
+  return `${COLOR_MISMATCH_BASE_URL}/color/image/${id}${query ? `?${query}` : ""}`;
 }

@@ -175,7 +175,7 @@ export default function ColorMismatch() {
       formData.append("image", uploadedImage);
       formData.append("language", "en");
 
-      const baseUrl = import.meta.env.VITE_MISMATCH_API_URL || "https://e-commerce-dashboard-asapc3eac9b9dfb7.westus2-01.azurewebsites.net";
+      const baseUrl = import.meta.env.VITE_MISMATCH_API_URL || "http://localhost:8000";
       const response = await fetch(`${baseUrl}/generate-description`, {
         method: "POST",
         body: formData,
