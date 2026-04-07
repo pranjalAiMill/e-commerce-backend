@@ -30,10 +30,10 @@ import { toast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
 import { getColorMismatchDataset, type DatasetResponse } from "@/lib/color-mismatch-api";
 import ProductImage from "@/components/ProductImage";
-import { COLOR_MISMATCH_API_URL } from "@/lib/api-config";
+import { EXECUTIVE_API_URL } from "@/lib/api-config";
 
-// ── Mismatch-specific API base (from file 2) ──────────────────────────────────
-const MISMATCH_API_BASE_URL = COLOR_MISMATCH_API_URL;
+// ── Mismatch Engine API base - uses mismatch_backend.py on port 8001 ──────────
+const MISMATCH_API_BASE_URL = EXECUTIVE_API_URL;
 
 async function fetchMismatchApi<T>(path: string): Promise<T> {
   const response = await fetch(`${MISMATCH_API_BASE_URL}${path}`);
