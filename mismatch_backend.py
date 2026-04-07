@@ -729,3 +729,13 @@ def mismatch_list(
             "regions": sorted({r["region"] for r in all_rows}),
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Local Run
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    import uvicorn
+    import os
+    port = int(os.environ.get("MISMATCH_PORT", 8001))
+    uvicorn.run("mismatch_backend:app", host="0.0.0.0", port=port, reload=True)

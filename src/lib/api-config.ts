@@ -8,15 +8,13 @@
  * Used by: ImageToText page, image-to-text-api.ts
  */
 export const IMAGE_TO_TEXT_API_URL = 
-  import.meta.env.VITE_IMAGE_TO_TEXT_API_URL ?? 
-  "https://e-commerce-1-imageto-txt.onrender.com";
+  "http://localhost:8000";
 
 /**
  * Color Mismatch API (also used for Image Description)
  * Used by: ColorMismatch page, color-mismatch-api.ts
  */
 export const COLOR_MISMATCH_API_URL = 
-  import.meta.env.VITE_MISMATCH_API_URL ?? 
   "http://localhost:8000";
 
 /**
@@ -24,9 +22,7 @@ export const COLOR_MISMATCH_API_URL =
  * Used by: Dashboard page, PhotoshootPerformance component, QualityRiskRadar component
  */
 export const EXECUTIVE_API_URL = 
-  import.meta.env.VITE_EXECUTIVE_API_URL ?? 
-  import.meta.env.VITE_MISMATCH_API_URL ?? 
-  "http://localhost:8000";
+  "http://localhost:8001";
 
 /**
  * AI Photoshoot API
@@ -34,7 +30,7 @@ export const EXECUTIVE_API_URL =
  */
 export const PHOTOSHOOT_API_URL = 
   import.meta.env.VITE_PHOTOSHOOT_API_URL ?? 
-  "https://ai-photoshoot-f9qy.onrender.com";
+  "http://localhost:8000";
 
 /**
  * Helper function to ensure URL doesn't have trailing slash

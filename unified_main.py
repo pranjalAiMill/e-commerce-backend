@@ -408,28 +408,6 @@ async def detect_and_match(
         "verdict": verdict,
     }
 
-# -------------------- Executive Dashboard Endpoints --------------------
-# Import executive endpoints from mismatch_backend.py
-try:
-    from mismatch_backend import (
-        executive_kpis,
-        executive_alerts,
-        executive_photoshoot_stats,
-        executive_risk_radar,
-        photoshoot_performance
-    )
-    
-    # Register the executive endpoints
-    app.get("/executive/kpis")(executive_kpis)
-    app.get("/executive/alerts")(executive_alerts)
-    app.get("/executive/ai-photoshoot-stats")(executive_photoshoot_stats)
-    app.get("/executive/risk-radar")(executive_risk_radar)
-    app.get("/executive/photoshoot-performance")(photoshoot_performance)
-    
-    logger.info("Executive dashboard endpoints loaded successfully")
-except Exception as e:
-    logger.warning(f"Could not load executive endpoints: {e}")
-
 # -------------------- Local Run --------------------
 if __name__ == "__main__":
     import uvicorn
