@@ -25,6 +25,7 @@ import {
   type ColorDetectionResult,
   type DetectAndMatchResult,
 } from "@/lib/color-mismatch-api";
+import { COLOR_MISMATCH_API_URL } from "@/lib/api-config";
 
 interface ImageDescription {
   title: string;
@@ -175,8 +176,7 @@ export default function ColorMismatch() {
       formData.append("image", uploadedImage);
       formData.append("language", "en");
 
-      const baseUrl = import.meta.env.VITE_MISMATCH_API_URL || "http://localhost:8000";
-      const response = await fetch(`${baseUrl}/generate-description`, {
+      const response = await fetch(`${COLOR_MISMATCH_API_URL}/generate-description`, {
         method: "POST",
         body: formData,
       });

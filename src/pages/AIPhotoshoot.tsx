@@ -49,6 +49,7 @@ import {
   type PhotoshootTemplate as BackendPhotoshootTemplate,
   PhotoshootApiError
 } from "@/lib/photoshoot-api";
+import { PHOTOSHOOT_API_URL } from "@/lib/api-config";
 
 // Note: checkHealth and VtoHealthResponse removed as backend doesn't have /health endpoint
 import { Separator } from "@/components/ui/separator";
@@ -234,9 +235,7 @@ export default function AIPhotoshoot() {
   const templatesData = useMemo<PhotoshootTemplatesResponse | null>(() => {
     if (!backendTemplatesData) return null;
     
-    // Get base URL from environment or use default
-    const photoshootBaseUrl = import.meta.env.VITE_PHOTOSHOOT_API_URL ?? "https://ai-photoshoot-f9qy.onrender.com";
-    console.log("Using photoshoot base URL:", photoshootBaseUrl);
+    console.log("Using photoshoot base URL:", PHOTOSHOOT_API_URL);
     
     // Map region names: backend uses "Indian", "South African", "Global"
     const regionMap: Record<string, keyof BackendPhotoshootTemplatesResponse> = {
@@ -252,7 +251,7 @@ export default function AIPhotoshoot() {
       if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim()) {
         // Replace any localhost:8000 with configured base URL
         if (imageUrl.includes('localhost:8000')) {
-          imageUrl = imageUrl.replace(/http:\/\/localhost:8000/g, photoshootBaseUrl);
+          imageUrl = imageUrl.replace(/http:\/\/localhost:8000/g, PHOTOSHOOT_API_URL);
           console.log(`[Template ${template.name}] Transformed localhost URL: ${template.img} -> ${imageUrl}`);
         } 
         // If URL starts with /static/, prepend base URL
@@ -1068,7 +1067,7 @@ export default function AIPhotoshoot() {
                       Backend Connection Failed
                     </p>
                     <p className="text-xs text-destructive/80">
-                      Failed to load templates. Make sure the backend is running at <code className="bg-destructive/20 px-1.5 py-0.5 rounded text-[10px] font-mono">{import.meta.env.VITE_PHOTOSHOOT_API_URL || "https://ai-photoshoot-f9qy.onrender.com"}</code>
+                      Failed to load templates. Make sure the backend is running at <code className="bg-destructive/20 px-1.5 py-0.5 rounded text-[10px] font-mono">{PHOTOSHOOT_API_URL}</code>
                     </p>
                     <div className="p-3 bg-muted/50 rounded-lg border border-border/50 space-y-2 mt-3">
                       <p className="text-xs font-medium text-foreground">Quick Setup:</p>

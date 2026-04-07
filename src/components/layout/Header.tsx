@@ -9,6 +9,7 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { useFilters } from "@/contexts/FilterContext";
 
 const markets = [
   { id: "india", name: "India", flag: "🇮🇳" },
@@ -22,18 +23,9 @@ const channels = [
 
 export function Header() {
   const [uiLanguage, setUiLanguage] = useState<'en' | 'local'>('en');
-  const [selectedMarket, setSelectedMarket] = useState(markets[0]);
-  const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set(channels));
+  const { selectedChannels, toggleChannel, selectedRegion, setSelectedRegion } = useFilters();
 
-  const toggleChannel = (channel: string) => {
-    const newChannels = new Set(selectedChannels);
-    if (newChannels.has(channel)) {
-      newChannels.delete(channel);
-    } else {
-      newChannels.add(channel);
-    }
-    setSelectedChannels(newChannels);
-  };
+  const selectedMarket = markets.find(m => m.id === selectedRegion) || markets[2]; // Default to global
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-card/80 backdrop-blur-xl">
@@ -60,7 +52,7 @@ export function Header() {
                 <DropdownMenuItem 
                   key={market.id} 
                   className="gap-2 cursor-pointer"
-                  onClick={() => setSelectedMarket(market)}
+                  onClick={() => setSelectedRegion(market.id)}
                 >
                   <span>{market.flag}</span>
                   <span>{market.name}</span>

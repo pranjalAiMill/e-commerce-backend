@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL ?? "https://api.example.com/api/v1";
+const BASE_URL = "http://0.0.0.0:8000";
 
 export interface ApiErrorShape {
   success?: boolean;

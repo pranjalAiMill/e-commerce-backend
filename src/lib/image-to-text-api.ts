@@ -1,10 +1,11 @@
 /**
  * Image-to-Text API Client
  * Connects to the FastAPI backend for image-to-text description generation
- * Backend URL: https://e-commerce-1-imageto-txt.onrender.com
  */
 
-const IMAGE_TO_TEXT_BASE_URL = import.meta.env.VITE_IMAGE_TO_TEXT_API_URL ?? "https://e-commerce-1-imageto-txt.onrender.com";
+import { IMAGE_TO_TEXT_API_URL, normalizeUrl } from './api-config';
+
+const IMAGE_TO_TEXT_BASE_URL = IMAGE_TO_TEXT_API_URL;
 
 export interface GenerateDescriptionResponse {
   title: string;
@@ -128,8 +129,7 @@ export async function generateDescription(
   file: File,
   language: string
 ): Promise<GenerateDescriptionResponse> {
-  // Ensure base URL doesn't have trailing slash
-  const baseUrl = IMAGE_TO_TEXT_BASE_URL.replace(/\/$/, '');
+  const baseUrl = normalizeUrl(IMAGE_TO_TEXT_BASE_URL);
   const url = `${baseUrl}/generate-description`;
   const formData = new FormData();
   formData.append("image", file);
@@ -178,8 +178,7 @@ export async function uploadImage(
   file: File,
   sku?: string
 ): Promise<UploadImageResponse> {
-  // Ensure base URL doesn't have trailing slash
-  const baseUrl = IMAGE_TO_TEXT_BASE_URL.replace(/\/$/, '');
+  const baseUrl = normalizeUrl(IMAGE_TO_TEXT_BASE_URL);
   const url = `${baseUrl}/image-to-text/upload`;
   const formData = new FormData();
   formData.append("file", file);
@@ -220,8 +219,7 @@ export async function generateProductText(params: {
   marketplace?: string;
   sku?: string;
 }): Promise<GenerateProductTextResponse> {
-  // Ensure base URL doesn't have trailing slash
-  const baseUrl = IMAGE_TO_TEXT_BASE_URL.replace(/\/$/, '');
+  const baseUrl = normalizeUrl(IMAGE_TO_TEXT_BASE_URL);
   const url = `${baseUrl}/image-to-text/generate`;
 
   try {
@@ -264,8 +262,7 @@ export async function getTranslations(
   imageId: string,
   language?: string
 ): Promise<TranslationsResponse> {
-  // Ensure base URL doesn't have trailing slash
-  const baseUrl = IMAGE_TO_TEXT_BASE_URL.replace(/\/$/, '');
+  const baseUrl = normalizeUrl(IMAGE_TO_TEXT_BASE_URL);
   const url = `${baseUrl}/image-to-text/translations/${imageId}${
     language ? `?language=${language}` : ""
   }`;
@@ -289,8 +286,7 @@ export async function getTranslations(
 export async function getQualityCheck(
   imageId: string
 ): Promise<QualityCheckResponse> {
-  // Ensure base URL doesn't have trailing slash
-  const baseUrl = IMAGE_TO_TEXT_BASE_URL.replace(/\/$/, '');
+  const baseUrl = normalizeUrl(IMAGE_TO_TEXT_BASE_URL);
   const url = `${baseUrl}/image-to-text/quality-check/${imageId}`;
 
   try {
@@ -310,8 +306,7 @@ export async function getQualityCheck(
  * Get KPIs
  */
 export async function getKPIs(): Promise<KPIsResponse> {
-  // Ensure base URL doesn't have trailing slash
-  const baseUrl = IMAGE_TO_TEXT_BASE_URL.replace(/\/$/, '');
+  const baseUrl = normalizeUrl(IMAGE_TO_TEXT_BASE_URL);
   const url = `${baseUrl}/image-to-text/kpis`;
 
   try {
@@ -334,8 +329,7 @@ export async function approveTranslations(params: {
   imageId: string;
   languages?: string[];
 }): Promise<{ success: boolean; approved: number; message: string }> {
-  // Ensure base URL doesn't have trailing slash
-  const baseUrl = IMAGE_TO_TEXT_BASE_URL.replace(/\/$/, '');
+  const baseUrl = normalizeUrl(IMAGE_TO_TEXT_BASE_URL);
   const url = `${baseUrl}/image-to-text/approve`;
 
   try {

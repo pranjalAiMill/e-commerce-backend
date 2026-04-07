@@ -1,4 +1,6 @@
-const COLOR_MISMATCH_BASE_URL = "http://localhost:8000";
+import { COLOR_MISMATCH_API_URL } from './api-config';
+
+const COLOR_MISMATCH_BASE_URL = COLOR_MISMATCH_API_URL;
 
 export interface ColorMismatchHealthResponse {
   status: string;

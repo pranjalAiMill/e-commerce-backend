@@ -362,6 +362,7 @@ import {
   ChevronRight,
   Sparkles,
   BarChart3,
+  Globe,
 } from "lucide-react";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { QualityRiskRadar } from "@/components/dashboard/QualityRiskRadar";
@@ -378,8 +379,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EXECUTIVE_API_URL } from "@/lib/api-config";
+import { useFilters } from "@/contexts/FilterContext";
 
-const EXEC_API_BASE = import.meta.env.VITE_MISMATCH_API_URL ?? "https://e-commerce-dashboard-asapc3eac9b9dfb7.westus2-01.azurewebsites.net";
+const EXEC_API_BASE = EXECUTIVE_API_URL;
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -442,11 +445,22 @@ const DATE_LABEL_MAP: Record<string, string> = {
 
 export default function Dashboard() {
   const [dateRange, setDateRange] = useState("30d");
+  const { getSelectedMarketplaces, selectedRegion } = useFilters();
 
   const { data, isLoading, isError } = useQuery<ExecutiveKpisResponse>({
-    queryKey: ["executive", "kpis", dateRange],
+    queryKey: ["executive", "kpis", dateRange, selectedRegion, getSelectedMarketplaces().join(",")],
     queryFn: async () => {
-      const res = await fetch(`${EXEC_API_BASE}/executive/kpis?period=${dateRange}`);
+      const params = new URLSearchParams();
+      params.set("period", dateRange);
+      params.set("region", selectedRegion);
+      
+      // Pass selected marketplaces as comma-separated string
+      const marketplaces = getSelectedMarketplaces();
+      if (marketplaces.length > 0) {
+        params.set("marketplace", marketplaces.join(","));
+      }
+      
+      const res = await fetch(`${EXEC_API_BASE}/executive/kpis?${params.toString()}`);
       if (!res.ok) throw new Error(`API ${res.status}`);
       return res.json();
     },

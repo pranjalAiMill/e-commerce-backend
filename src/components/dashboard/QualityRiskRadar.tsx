@@ -896,8 +896,9 @@ import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
+import { EXECUTIVE_API_URL } from "@/lib/api-config";
 
-const EXEC_API_BASE = import.meta.env.VITE_MISMATCH_API_URL ?? "https://e-commerce-dashboard-asapc3eac9b9dfb7.westus2-01.azurewebsites.net";
+const EXEC_API_BASE = EXECUTIVE_API_URL;
 
 // ── Types ──────────────────────────────────────────────────────────────────
 

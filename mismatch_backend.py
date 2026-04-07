@@ -208,8 +208,13 @@ def apply_filters(
         norm = _normalize_brand(brand)
         filtered = [r for r in filtered if _normalize_brand(r.get("brand", "")) == norm]
     if marketplace and marketplace != "all":
-        norm = _normalize_marketplace(marketplace)
-        filtered = [r for r in filtered if r["marketplace"].lower() == norm.lower()]
+        # Support comma-separated marketplaces for multi-select
+        if "," in marketplace:
+            marketplaces = [_normalize_marketplace(m.strip()) for m in marketplace.split(",")]
+            filtered = [r for r in filtered if r["marketplace"] in marketplaces or r["marketplace"].lower() in [m.lower() for m in marketplaces]]
+        else:
+            norm = _normalize_marketplace(marketplace)
+            filtered = [r for r in filtered if r["marketplace"].lower() == norm.lower()]
     if language and language != "all":
         filtered = [r for r in filtered if r.get("language", "").lower() == language.lower()]
     if region and region != "all":
