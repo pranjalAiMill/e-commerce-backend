@@ -1,16 +1,12 @@
 from __future__ import annotations
 
 import csv
-import os
-import urllib.request
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
-import logging
 
 app = FastAPI(title="Mismatch Backend", version="0.5.0")
 app.add_middleware(
@@ -21,71 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Use hf_products_with_verdict.csv from ProductColorMismatch folder
-DATA_PATH = Path(__file__).parent / "ProductColorMismatch" / "data" / "hf_products_with_verdict.csv"
-
-# Azure Blob Storage configuration for images
-AZURE_ACCOUNT = "ecommerceblobvtryon"
-AZURE_CONTAINER = "vtryon"
-AZURE_FOLDER = "Product_Colour_MisMatch"
-BLOB_BASE_URL = f"https://{AZURE_ACCOUNT}.blob.core.windows.net/{AZURE_CONTAINER}/{AZURE_FOLDER}"
-
-# ---------------------------------------------------------------------------
-# Image serving helpers
-# ---------------------------------------------------------------------------
-
-def sanitize_id(product_id: str) -> str:
-    """Sanitize product ID for safe URL usage."""
-    safe = "".join(c for c in str(product_id) if c.isalnum() or c in ("_", "-"))
-    return safe or "unknown"
-
-
-def get_blob_image_url(product_id: str, index: Optional[int] = None) -> Optional[str]:
-    """
-    Build the Azure Blob URL for a product image.
-    Tries multiple filename patterns and returns the first that exists.
-    """
-    safe_id = sanitize_id(product_id)
-    candidates = []
-    
-    # Try with index prefix first
-    if index is not None:
-        candidates += [
-            f"{BLOB_BASE_URL}/{index:05d}_{safe_id}.jpg",
-            f"{BLOB_BASE_URL}/{index:05d}_{safe_id}.png",
-            f"{BLOB_BASE_URL}/{index:05d}_{safe_id}.jpeg",
-        ]
-    
-    # Then try without index
-    candidates += [
-        f"{BLOB_BASE_URL}/{safe_id}.jpg",
-        f"{BLOB_BASE_URL}/{safe_id}.png",
-        f"{BLOB_BASE_URL}/{safe_id}.jpeg",
-    ]
-    
-    # Check which URL exists
-    for url in candidates:
-        try:
-            req = urllib.request.Request(url, method="HEAD")
-            with urllib.request.urlopen(req, timeout=3) as resp:
-                if resp.status == 200:
-                    return url
-        except Exception:
-            continue
-    
-    # Fallback to first candidate
-    fallback = (
-        f"{BLOB_BASE_URL}/{index:05d}_{safe_id}.jpg"
-        if index is not None
-        else f"{BLOB_BASE_URL}/{safe_id}.jpg"
-    )
-    logger.warning(f"Blob not found for product_id={product_id}, index={index}. Fallback: {fallback}")
-    return fallback
-
+DATA_PATH = Path(__file__).with_name("mismatch_data.csv")
 
 # ---------------------------------------------------------------------------
 # Utility helpers
@@ -144,69 +76,42 @@ def load_rows(date_from: Optional[str] = None, date_to: Optional[str] = None) ->
     with DATA_PATH.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            # Map hf_products_with_verdict.csv columns to expected format
-            # Calculate mismatch score based on verdict and confidence
-            verdict = row.get("Verdict", "").strip()
-            confidence = _safe_float(row.get("detected_confidence", "0"))
-            
-            # Mismatch score: 0-100 scale
-            # Match with high confidence = low score
-            # Mismatch = high score
-            if verdict.lower() == "mismatch":
-                mismatch_score = int(70 + (confidence * 30))  # 70-100 for mismatches
-            else:
-                mismatch_score = int((1 - confidence) * 50)  # 0-50 for matches
-            
-            # Map marketplace based on usage/category
-            usage = row.get("usage", "Casual")
-            if "Sports" in usage:
-                marketplace = "Myntra"
-            elif "Formal" in usage:
-                marketplace = "Amazon.in"
-            elif "Party" in row.get("productDisplayName", ""):
-                marketplace = "Flipkart"
-            else:
-                marketplace = "Shopify"
-            
-            # Map region based on category
-            master_cat = row.get("masterCategory", "Apparel")
-            if master_cat == "Accessories":
-                region = "global"
-            elif "Men" in row.get("gender", ""):
-                region = "india"
-            else:
-                region = "south_africa"
-            
-            # Create issue type based on verdict
-            if verdict.lower() == "mismatch":
-                issue_type = "Color Mismatch"
-            else:
-                issue_type = "Localization"
-            
+            if date_from or date_to:
+                row_date = row.get("date", "")
+                if row_date:
+                    try:
+                        rd = datetime.strptime(row_date, "%Y-%m-%d").date()
+                        if date_from and rd < datetime.strptime(date_from, "%Y-%m-%d").date():
+                            continue
+                        if date_to and rd > datetime.strptime(date_to, "%Y-%m-%d").date():
+                            continue
+                    except ValueError:
+                        pass
+
             rows.append({
-                "sku": f"SKU-{row.get('id', '0')}",
-                "marketplace": marketplace,
-                "mismatchScore": mismatch_score,
-                "attributeErrors": [f"Color: {row.get('baseColour', '')} vs {row.get('detected_color', '')}"] if verdict.lower() == "mismatch" else [],
-                "localMissing": [] if verdict.lower() == "match" else ["color_description"],
-                "category": row.get("masterCategory", "Apparel"),
-                "issueType": issue_type,
-                "listingProb": int(confidence * 100),
-                "impactScore": _safe_float(row.get("year", "2020")) / 200,  # Normalize year to impact
-                "title": row.get("productDisplayName", ""),
-                "description": f"{row.get('articleType', '')} - {row.get('baseColour', '')} {row.get('subCategory', '')}",
-                "brand": row.get("gender", "Unisex"),  # Using gender as brand placeholder
-                "language": "en",
-                "region": region,
-                "date": f"{int(_safe_float(row.get('year', '2020')))}-01-01" if row.get("year") else "2020-01-01",
-                "aiPhotoshootDone": verdict.lower() == "match",
-                "aiPhotosGenerated": 1 if verdict.lower() == "match" else 0,
-                "traditionalPhotoCost": 500.0,
-                "aiPhotoCost": 50.0 if verdict.lower() == "match" else 500.0,
-                "complianceScore": int(confidence * 100),
-                "skuAiCoverage": verdict.lower() == "match",
-                "avgRenderTimeSeconds": confidence * 10,
-                "marketplaceApprovalRate": confidence * 100,
+                "sku": row["sku"],
+                "marketplace": row["marketplace"],
+                "mismatchScore": _safe_int(row.get("mismatchScore", "0")),
+                "attributeErrors": _split_pipe(row.get("attributeErrors", "")),
+                "localMissing": _split_pipe(row.get("localMissing", "")),
+                "category": row["category"],
+                "issueType": row["issueType"],
+                "listingProb": _safe_int(row.get("listingProb", "0")),
+                "impactScore": _safe_float(row.get("impactScore", "0")),
+                "title": row["title"],
+                "description": row["description"],
+                "brand": row["brand"],
+                "language": row["language"],
+                "region": row["region"],
+                "date": row.get("date", ""),
+                "aiPhotoshootDone": _safe_bool(row.get("aiPhotoshootDone", "false")),
+                "aiPhotosGenerated": _safe_int(row.get("aiPhotosGenerated", "0")),
+                "traditionalPhotoCost": _safe_float(row.get("traditionalPhotoCost", "0")),
+                "aiPhotoCost": _safe_float(row.get("aiPhotoCost", "0")),
+                "complianceScore": _safe_int(row.get("complianceScore", "0")),
+                "skuAiCoverage": _safe_bool(row.get("skuAiCoverage", "false")),
+                "avgRenderTimeSeconds": _safe_float(row.get("avgRenderTimeSeconds", "0")),
+                "marketplaceApprovalRate": _safe_float(row.get("marketplaceApprovalRate", "0")),
             })
     return rows
 
@@ -825,55 +730,43 @@ def mismatch_list(
         },
     }
 
+# ── hf_products_with_verdict.csv endpoint ────────────────────────────────────
+HF_CSV_PATH = Path(__file__).parent / "ProductColorMismatch" / "data" / "hf_products_with_verdict.csv"
 
-# ---------------------------------------------------------------------------
-# Color Mismatch Dataset Endpoint (for Browse Dataset feature)
-# ---------------------------------------------------------------------------
+COLOR_COLUMN_CANDIDATES = ["baseColour", "base_colour", "color", "colour"]
+NAME_COLUMN_CANDIDATES  = ["productDisplayName", "product_name", "name", "title"]
 
 @app.get("/color/dataset")
-def get_color_dataset():
-    """
-    Return the hf_products_with_verdict.csv data in a format compatible with the frontend.
-    This endpoint is used by the "Color Mismatch CSV" section in the Mismatch Engine page.
-    """
-    # Read the CSV directly and return rows with original column names
-    dataset_rows = []
-    with DATA_PATH.open("r", encoding="utf-8", newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            # Keep original CSV column names that frontend expects
-            dataset_rows.append({
-                "id": row.get("id", ""),
-                "productDisplayName": row.get("productDisplayName", ""),
-                "baseColour": row.get("baseColour", ""),
-                "detected_color": row.get("detected_color", ""),
-                "Verdict": row.get("Verdict", ""),
-                "detected_confidence": _safe_float(row.get("detected_confidence", "0")),
-                "masterCategory": row.get("masterCategory", ""),
-                "gender": row.get("gender", ""),
-                "articleType": row.get("articleType", ""),
-                "subCategory": row.get("subCategory", ""),
-            })
-    
+def get_hf_dataset():
+    if not HF_CSV_PATH.exists():
+        # fallback: look for the file next to this script
+        alt = Path(__file__).with_name("hf_products_with_verdict.csv")
+        if alt.exists():
+            path = alt
+        else:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail=f"CSV not found at {HF_CSV_PATH}")
+    else:
+        path = HF_CSV_PATH
+
+    import csv as csv_mod
+    with path.open("r", encoding="utf-8", newline="") as f:
+        reader = csv_mod.DictReader(f)
+        records = [row for row in reader]
+
+    if not records:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Dataset is empty.")
+
+    headers = list(records[0].keys())
+    color_col = next((c for c in COLOR_COLUMN_CANDIDATES if c in headers), None)
+    name_col  = next((c for c in NAME_COLUMN_CANDIDATES  if c in headers), None)
+
     return {
-        "rows": dataset_rows,
-        "color_column": "baseColour",
-        "name_column": "productDisplayName",
+        "rows": records,
+        "color_column": color_col,
+        "name_column":  name_col,
     }
-
-
-@app.get("/color/image/{product_id}")
-def get_product_image(product_id: str, index: Optional[int] = Query(None)):
-    """
-    Serve product images from Azure Blob Storage.
-    Returns a redirect to the blob URL.
-    """
-    blob_url = get_blob_image_url(product_id, index)
-    if blob_url is None:
-        raise HTTPException(status_code=404, detail=f"Image not found for product ID: {product_id}")
-    return RedirectResponse(url=blob_url)
-
-
 # ---------------------------------------------------------------------------
 # Local Run
 # ---------------------------------------------------------------------------

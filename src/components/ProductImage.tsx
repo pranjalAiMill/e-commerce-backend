@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ImageIcon, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getProductImageUrl, getMismatchDatasetImageUrl } from "@/lib/color-mismatch-api";
+import { getProductImageUrl } from "@/lib/color-mismatch-api";
 
 interface ProductImageProps {
   productId: string | number;
@@ -11,7 +11,6 @@ interface ProductImageProps {
   fallbackClassName?: string;
   onError?: () => void;
   onLoad?: () => void;
-  useMismatchBackend?: boolean; // Use port 8001 for mismatch dataset images
 }
 
 export default function ProductImage({
@@ -22,14 +21,11 @@ export default function ProductImage({
   fallbackClassName,
   onError,
   onLoad,
-  useMismatchBackend = false,
 }: ProductImageProps) {
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
 
-  const imageUrl = useMismatchBackend 
-    ? getMismatchDatasetImageUrl(productId, index)
-    : getProductImageUrl(productId, index);
+  const imageUrl = getProductImageUrl(productId, index);
 
   const handleError = () => {
     setImageError(true);

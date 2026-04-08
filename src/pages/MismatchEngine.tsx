@@ -28,13 +28,16 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
-import { getColorMismatchDataset, type DatasetResponse } from "@/lib/color-mismatch-api";
 import ProductImage from "@/components/ProductImage";
 import { EXECUTIVE_API_URL } from "@/lib/api-config";
 
 // ── Mismatch Engine API base - uses mismatch_backend.py on port 8001 ──────────
 const MISMATCH_API_BASE_URL = EXECUTIVE_API_URL;
-
+type DatasetResponse = {
+  rows: Record<string, string>[];
+  color_column: string | null;
+  name_column: string | null;
+};
 async function fetchMismatchApi<T>(path: string): Promise<T> {
   const response = await fetch(`${MISMATCH_API_BASE_URL}${path}`);
   if (!response.ok) {
@@ -264,7 +267,11 @@ export default function MismatchEngine() {
     error: colorCsvError,
   } = useQuery<DatasetResponse, Error>({
     queryKey: ["color-mismatch-dataset-summary"],
-    queryFn: getColorMismatchDataset,
+    queryFn: () =>
+      fetch(`${EXECUTIVE_API_URL}/color/dataset`).then((r) => {
+        if (!r.ok) throw new Error(`CSV fetch failed: ${r.status}`);
+        return r.json();
+      }),
   });
 
   // ── Mutations ─────────────────────────────────────────────────────────────
@@ -1132,7 +1139,6 @@ export default function MismatchEngine() {
                                     alt={displayName}
                                     className="w-16 h-16"
                                     fallbackClassName="w-16 h-16"
-                                    useMismatchBackend={true}
                                   />
                                 </td>
                                 <td className="p-3 font-mono text-sm">{String(row["id"] ?? "-")}</td>
