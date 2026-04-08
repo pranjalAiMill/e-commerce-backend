@@ -7,6 +7,7 @@ This project now uses two separate backend services:
 ### 1. Mismatch Backend (Port 8001)
 **File:** `mismatch_backend.py`
 **Port:** 8001
+**Data Source:** `ProductColorMismatch/data/hf_products_with_verdict.csv`
 **Used by:**
 - Dashboard (Executive KPIs, Risk Radar, Photoshoot Performance)
 - Mismatch Engine page
@@ -19,6 +20,7 @@ This project now uses two separate backend services:
 - `/executive/ai-photoshoot-stats`
 - `/mismatch/kpis`
 - `/mismatch/list`
+- `/color/dataset` (CSV data for Mismatch Engine table)
 
 **To run:**
 ```bash

@@ -1132,6 +1132,7 @@ export default function MismatchEngine() {
                                     alt={displayName}
                                     className="w-16 h-16"
                                     fallbackClassName="w-16 h-16"
+                                    useMismatchBackend={true}
                                   />
                                 </td>
                                 <td className="p-3 font-mono text-sm">{String(row["id"] ?? "-")}</td>

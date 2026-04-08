@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import csv
+import os
+import urllib.request
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+import logging
 
 app = FastAPI(title="Mismatch Backend", version="0.5.0")
 app.add_middleware(
@@ -17,8 +21,71 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Use hf_products_with_verdict.csv from ProductColorMismatch folder
 DATA_PATH = Path(__file__).parent / "ProductColorMismatch" / "data" / "hf_products_with_verdict.csv"
+
+# Azure Blob Storage configuration for images
+AZURE_ACCOUNT = "ecommerceblobvtryon"
+AZURE_CONTAINER = "vtryon"
+AZURE_FOLDER = "Product_Colour_MisMatch"
+BLOB_BASE_URL = f"https://{AZURE_ACCOUNT}.blob.core.windows.net/{AZURE_CONTAINER}/{AZURE_FOLDER}"
+
+# ---------------------------------------------------------------------------
+# Image serving helpers
+# ---------------------------------------------------------------------------
+
+def sanitize_id(product_id: str) -> str:
+    """Sanitize product ID for safe URL usage."""
+    safe = "".join(c for c in str(product_id) if c.isalnum() or c in ("_", "-"))
+    return safe or "unknown"
+
+
+def get_blob_image_url(product_id: str, index: Optional[int] = None) -> Optional[str]:
+    """
+    Build the Azure Blob URL for a product image.
+    Tries multiple filename patterns and returns the first that exists.
+    """
+    safe_id = sanitize_id(product_id)
+    candidates = []
+    
+    # Try with index prefix first
+    if index is not None:
+        candidates += [
+            f"{BLOB_BASE_URL}/{index:05d}_{safe_id}.jpg",
+            f"{BLOB_BASE_URL}/{index:05d}_{safe_id}.png",
+            f"{BLOB_BASE_URL}/{index:05d}_{safe_id}.jpeg",
+        ]
+    
+    # Then try without index
+    candidates += [
+        f"{BLOB_BASE_URL}/{safe_id}.jpg",
+        f"{BLOB_BASE_URL}/{safe_id}.png",
+        f"{BLOB_BASE_URL}/{safe_id}.jpeg",
+    ]
+    
+    # Check which URL exists
+    for url in candidates:
+        try:
+            req = urllib.request.Request(url, method="HEAD")
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                if resp.status == 200:
+                    return url
+        except Exception:
+            continue
+    
+    # Fallback to first candidate
+    fallback = (
+        f"{BLOB_BASE_URL}/{index:05d}_{safe_id}.jpg"
+        if index is not None
+        else f"{BLOB_BASE_URL}/{safe_id}.jpg"
+    )
+    logger.warning(f"Blob not found for product_id={product_id}, index={index}. Fallback: {fallback}")
+    return fallback
+
 
 # ---------------------------------------------------------------------------
 # Utility helpers
@@ -757,6 +824,54 @@ def mismatch_list(
             "regions": sorted({r["region"] for r in all_rows}),
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Color Mismatch Dataset Endpoint (for Browse Dataset feature)
+# ---------------------------------------------------------------------------
+
+@app.get("/color/dataset")
+def get_color_dataset():
+    """
+    Return the hf_products_with_verdict.csv data in a format compatible with the frontend.
+    This endpoint is used by the "Color Mismatch CSV" section in the Mismatch Engine page.
+    """
+    # Read the CSV directly and return rows with original column names
+    dataset_rows = []
+    with DATA_PATH.open("r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            # Keep original CSV column names that frontend expects
+            dataset_rows.append({
+                "id": row.get("id", ""),
+                "productDisplayName": row.get("productDisplayName", ""),
+                "baseColour": row.get("baseColour", ""),
+                "detected_color": row.get("detected_color", ""),
+                "Verdict": row.get("Verdict", ""),
+                "detected_confidence": _safe_float(row.get("detected_confidence", "0")),
+                "masterCategory": row.get("masterCategory", ""),
+                "gender": row.get("gender", ""),
+                "articleType": row.get("articleType", ""),
+                "subCategory": row.get("subCategory", ""),
+            })
+    
+    return {
+        "rows": dataset_rows,
+        "color_column": "baseColour",
+        "name_column": "productDisplayName",
+    }
+
+
+@app.get("/color/image/{product_id}")
+def get_product_image(product_id: str, index: Optional[int] = Query(None)):
+    """
+    Serve product images from Azure Blob Storage.
+    Returns a redirect to the blob URL.
+    """
+    blob_url = get_blob_image_url(product_id, index)
+    if blob_url is None:
+        raise HTTPException(status_code=404, detail=f"Image not found for product ID: {product_id}")
+    return RedirectResponse(url=blob_url)
 
 
 # ---------------------------------------------------------------------------

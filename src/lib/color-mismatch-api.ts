@@ -118,9 +118,11 @@ export async function checkColorMismatchHealth(): Promise<ColorMismatchHealthRes
 
 /**
  * Fetch the processed dataset (CSV) used by the color mismatch detector.
+ * Now fetches from mismatch_backend.py (port 8001)
  */
 export async function getColorMismatchDataset(): Promise<DatasetResponse> {
-  const url = `${COLOR_MISMATCH_BASE_URL}/color/dataset`;
+  // Use port 8001 for mismatch backend
+  const url = `http://localhost:8001/color/dataset`;
 
   try {
     const res = await fetch(url, {
@@ -302,4 +304,18 @@ export function getProductImageUrl(productId: string | number, index?: number): 
   }
   const query = params.toString();
   return `${COLOR_MISMATCH_BASE_URL}/color/image/${id}${query ? `?${query}` : ""}`;
+}
+
+/**
+ * Get product image URL from mismatch backend (port 8001)
+ * Used for CSV dataset images in Mismatch Engine page
+ */
+export function getMismatchDatasetImageUrl(productId: string | number, index?: number): string {
+  const id = String(productId);
+  const params = new URLSearchParams();
+  if (index !== undefined) {
+    params.set("index", String(index));
+  }
+  const query = params.toString();
+  return `http://localhost:8001/color/image/${id}${query ? `?${query}` : ""}`;
 }
