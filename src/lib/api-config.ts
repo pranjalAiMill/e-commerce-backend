@@ -10,7 +10,7 @@
  */
 export const IMAGE_TO_TEXT_API_URL = 
   import.meta.env.VITE_IMAGE_TO_TEXT_API_URL ?? 
-  "http://localhost:8000";
+  "e-commerce-unified-aebdfudhh7bjadff.westus2-01.azurewebsites.net";
 
 /**
  * Color Mismatch API (also used for Image Description)
@@ -19,7 +19,7 @@ export const IMAGE_TO_TEXT_API_URL =
  */
 export const COLOR_MISMATCH_API_URL = 
   import.meta.env.VITE_MISMATCH_API_URL ?? 
-  "http://localhost:8000";
+  "e-commerce-unified-aebdfudhh7bjadff.westus2-01.azurewebsites.net";
 
 /**
  * Executive Dashboard & Mismatch Engine API
@@ -28,7 +28,7 @@ export const COLOR_MISMATCH_API_URL =
  */
 export const EXECUTIVE_API_URL = 
   import.meta.env.VITE_EXECUTIVE_API_URL ?? 
-  "http://localhost:8001";
+  "https://e-commerce-dashboard-asapc3eac9b9dfb7.westus2-01.azurewebsites.net";
 
 /**
  * AI Photoshoot API
@@ -37,7 +37,7 @@ export const EXECUTIVE_API_URL =
  */
 export const PHOTOSHOOT_API_URL = 
   import.meta.env.VITE_PHOTOSHOOT_API_URL ?? 
-  "http://localhost:8000";
+  "https://e-commerce-aiphotoshoot-h0d5czdmb7eqc9bc.westus2-01.azurewebsites.net";
 
 /**
  * Helper function to ensure URL doesn't have trailing slash
