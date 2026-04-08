@@ -10,7 +10,7 @@
  */
 export const IMAGE_TO_TEXT_API_URL = 
   import.meta.env.VITE_IMAGE_TO_TEXT_API_URL ?? 
-  "e-commerce-unified-aebdfudhh7bjadff.westus2-01.azurewebsites.net";
+  "https://e-commerce-unified-aebdfudhh7bjadff.westus2-01.azurewebsites.net";
 
 /**
  * Color Mismatch API (also used for Image Description)
@@ -19,7 +19,7 @@ export const IMAGE_TO_TEXT_API_URL =
  */
 export const COLOR_MISMATCH_API_URL = 
   import.meta.env.VITE_MISMATCH_API_URL ?? 
-  "e-commerce-unified-aebdfudhh7bjadff.westus2-01.azurewebsites.net";
+  "https://e-commerce-unified-aebdfudhh7bjadff.westus2-01.azurewebsites.net";
 
 /**
  * Executive Dashboard & Mismatch Engine API
